@@ -7,9 +7,9 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build -w packages/shared && npm run build -w packages/server && npm run build -w packages/agentic-base",
-    "dev": "concurrently \"npm run dev -w packages/server\" \"npm run dev -w packages/client\"",
-    "test": "npm run test -w packages/server && npm run test -w packages/client",
+    "build": "npm run build -w packages/shared && npm run build -w packages/cli",
+    "dev": "concurrently \"npm run dev -w packages/server\" \"npm run dev -w packages/cli\"",
+    "test": "npm run test -w packages/shared && npm run test -w packages/cli",
     "test:all": "npm run test",
     "clean": "rimraf packages/*/dist packages/*/build",
     "setup": "npm install && npm run build"

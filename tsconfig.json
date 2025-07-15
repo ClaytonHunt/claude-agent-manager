@@ -17,7 +17,8 @@
       "@claude-agent-manager/shared": ["./packages/shared/src"],
       "@claude-agent-manager/server": ["./packages/server/src"],
       "@claude-agent-manager/client": ["./packages/client/src"],
-      "@claude-agent-manager/agentic-base": ["./packages/agentic-base/src"]
+      "@claude-agent-manager/agentic-base": ["./packages/agentic-base/src"],
+      "@claude-agent-manager/cli": ["./packages/cli/src"]
     }
   },
   "include": ["packages/*/src/**/*"],
