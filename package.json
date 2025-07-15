@@ -7,9 +7,9 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build -w packages/shared && npm run build -w packages/cli",
-    "dev": "concurrently \"npm run dev -w packages/server\" \"npm run dev -w packages/cli\"",
-    "test": "npm run test -w packages/shared && npm run test -w packages/cli",
+    "build": "npm run build -w packages/shared && npm run build -w packages/server",
+    "dev": "npm run dev -w packages/server",
+    "test": "npm run test -w packages/shared && npm run test -w packages/server",
     "test:all": "npm run test",
     "clean": "rimraf packages/*/dist packages/*/build",
     "setup": "npm install && npm run build"
