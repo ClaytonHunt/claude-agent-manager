@@ -1,0 +1,35 @@
+{
+  "name": "claude-agent-manager",
+  "version": "0.1.0",
+  "description": "Monitor and manage Claude Code agents and subagents with real-time tracking and context preservation",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w packages/shared && npm run build -w packages/server && npm run build -w packages/agentic-base",
+    "dev": "concurrently \"npm run dev -w packages/server\" \"npm run dev -w packages/client\"",
+    "test": "npm run test -w packages/server && npm run test -w packages/client",
+    "test:all": "npm run test",
+    "clean": "rimraf packages/*/dist packages/*/build",
+    "setup": "npm install && npm run build"
+  },
+  "keywords": [
+    "claude",
+    "agent",
+    "monitoring",
+    "development",
+    "automation"
+  ],
+  "author": "Clayton Hunt",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "concurrently": "^8.2.2",
+    "rimraf": "^5.0.7",
+    "typescript": "^5.5.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
