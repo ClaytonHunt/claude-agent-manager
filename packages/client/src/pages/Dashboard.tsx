@@ -18,7 +18,7 @@ export function Dashboard() {
   } = useAgentStore();
   
   const { addNotification } = useUiStore();
-  const { state: wsState, on, off } = useWebSocket({ autoConnect: true });
+  const { state: wsState, on, off, subscribe } = useWebSocket({ autoConnect: true });
 
   // Real-time agent updates
   useEffect(() => {
@@ -57,6 +57,24 @@ export function Dashboard() {
   useEffect(() => {
     fetchAgents();
   }, [fetchAgents]);
+
+  // Subscribe to agent channels for real-time updates
+  useEffect(() => {
+    if (agents.length > 0) {
+      // Subscribe to individual agent channels
+      const agentChannels = agents.map(agent => `agent:${agent.id}`);
+      
+      // Subscribe to project channels for broader coverage
+      const projectPaths = [...new Set(agents.map(a => a.projectPath))];
+      const projectChannels = projectPaths.map(path => `project:${path}`);
+      
+      // Subscribe to all relevant channels
+      const allChannels = [...agentChannels, ...projectChannels];
+      subscribe(allChannels);
+      
+      console.log('Dashboard subscribed to channels:', allChannels);
+    }
+  }, [agents, subscribe]);
 
   const filteredAgents = getFilteredAgents();
   const stats = getAgentStats();

@@ -13,6 +13,7 @@ import {
 } from '@claude-agent-manager/shared';
 import { RedisService } from './RedisService';
 import { MemoryStorageService } from './MemoryStorageService';
+import { WebSocketService } from './WebSocketService';
 import { logger } from '../utils/logger';
 
 // Interface for storage service
@@ -31,9 +32,14 @@ interface StorageService {
 
 export class AgentService {
   private storage: StorageService;
+  private wsService?: WebSocketService;
 
   constructor(redisService: RedisService, private fallbackToMemory: boolean = true) {
     this.storage = redisService;
+  }
+
+  setWebSocketService(wsService: WebSocketService): void {
+    this.wsService = wsService;
   }
 
   async initialize(): Promise<void> {
@@ -81,6 +87,11 @@ export class AgentService {
 
     await this.storage.saveAgent(agent);
     
+    // Broadcast agent registration
+    if (this.wsService) {
+      this.wsService.broadcastAgentUpdate(agent);
+    }
+    
     logger.info(`Agent registered: ${agent.id} for project: ${agent.projectPath}`);
     
     return agent;
@@ -109,12 +120,24 @@ export class AgentService {
     
     logger.info(`Agent ${id} status changed to: ${status}`);
     
-    return await this.getAgent(id);
+    const updatedAgent = await this.getAgent(id);
+    
+    // Broadcast agent status update
+    if (this.wsService) {
+      this.wsService.broadcastAgentUpdate(updatedAgent);
+    }
+    
+    return updatedAgent;
   }
 
   async addLogEntry(id: string, entry: Omit<LogEntry, 'id' | 'timestamp'>): Promise<void> {
     const logEntry = createLogEntry(entry.level, entry.message, entry.metadata);
     await this.storage.addLogToAgent(id, logEntry);
+    
+    // Broadcast log entry
+    if (this.wsService) {
+      this.wsService.broadcastLogEntry(id, logEntry);
+    }
   }
 
   async updateAgentContext(id: string, context: Record<string, any>): Promise<Agent> {
@@ -127,6 +150,11 @@ export class AgentService {
     
     const logEntry = createLogEntry('info', 'Context updated');
     await this.storage.addLogToAgent(id, logEntry);
+    
+    // Broadcast agent context update
+    if (this.wsService) {
+      this.wsService.broadcastAgentUpdate(agent);
+    }
     
     return agent;
   }
@@ -155,6 +183,11 @@ export class AgentService {
     
     await this.storage.addLogToAgent(context.fromAgentId, fromLogEntry);
     await this.storage.addLogToAgent(context.toAgentId, toLogEntry);
+    
+    // Broadcast handoff event
+    if (this.wsService) {
+      this.wsService.broadcastHandoff(context.fromAgentId, context.toAgentId, context.context);
+    }
     
     logger.info(`Agent handoff: ${context.fromAgentId} -> ${context.toAgentId}`);
   }

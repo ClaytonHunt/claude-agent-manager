@@ -167,6 +167,16 @@ export class WebSocketService {
     }
   }
 
+  // Public broadcast method for external use
+  public broadcastEvent(type: string, data: any, channel?: string): void {
+    const message: WebSocketMessage = {
+      type: type as WebSocketMessage['type'],
+      data,
+      timestamp: new Date()
+    };
+    this.broadcast(message, channel);
+  }
+
   // Public methods for broadcasting updates
   broadcastAgentUpdate(agent: Agent): void {
     this.broadcast({
