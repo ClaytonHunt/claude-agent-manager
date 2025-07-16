@@ -12,10 +12,45 @@ import {
   sanitizeContext
 } from '@claude-agent-manager/shared';
 import { RedisService } from './RedisService';
+import { MemoryStorageService } from './MemoryStorageService';
 import { logger } from '../utils/logger';
 
+// Interface for storage service
+interface StorageService {
+  connect(): Promise<void>;
+  disconnect(): Promise<void>;
+  saveAgent(agent: Agent): Promise<void>;
+  getAgent(id: string): Promise<Agent | null>;
+  getAgents(query?: AgentQuery): Promise<Agent[]>;
+  deleteAgent(id: string): Promise<void>;
+  updateAgentStatus(id: string, status: Agent['status']): Promise<void>;
+  addLogToAgent(id: string, log: LogEntry): Promise<void>;
+  getProjectStats(projectPath: string): Promise<Record<string, number>>;
+  cleanup(): Promise<void>;
+}
+
 export class AgentService {
-  constructor(private redisService: RedisService) {}
+  private storage: StorageService;
+
+  constructor(redisService: RedisService, private fallbackToMemory: boolean = true) {
+    this.storage = redisService;
+  }
+
+  async initialize(): Promise<void> {
+    try {
+      await this.storage.connect();
+    } catch (error) {
+      if (this.fallbackToMemory) {
+        logger.warn('⚠️  Redis connection failed, falling back to memory storage');
+        logger.warn('📝 For production: sudo apt install redis-server && sudo systemctl start redis-server');
+        this.storage = new MemoryStorageService();
+        await this.storage.connect();
+      } else {
+        logger.error('❌ Redis connection failed and fallback disabled');
+        throw error;
+      }
+    }
+  }
 
   async registerAgent(registration: AgentRegistration): Promise<Agent> {
     // Validate registration
@@ -24,7 +59,7 @@ export class AgentService {
     }
 
     // Check if agent already exists
-    const existingAgent = await this.redisService.getAgent(registration.id);
+    const existingAgent = await this.storage.getAgent(registration.id);
     if (existingAgent) {
       throw new ValidationError(`Agent with ID ${registration.id} already exists`);
     }
@@ -44,7 +79,7 @@ export class AgentService {
       tags: registration.tags || []
     };
 
-    await this.redisService.saveAgent(agent);
+    await this.storage.saveAgent(agent);
     
     logger.info(`Agent registered: ${agent.id} for project: ${agent.projectPath}`);
     
@@ -52,7 +87,7 @@ export class AgentService {
   }
 
   async getAgent(id: string): Promise<Agent> {
-    const agent = await this.redisService.getAgent(id);
+    const agent = await this.storage.getAgent(id);
     if (!agent) {
       throw new NotFoundError(`Agent with ID ${id} not found`);
     }
@@ -60,17 +95,17 @@ export class AgentService {
   }
 
   async getAgents(query: AgentQuery = {}): Promise<Agent[]> {
-    return await this.redisService.getAgents(query);
+    return await this.storage.getAgents(query);
   }
 
   async updateAgentStatus(id: string, status: Agent['status']): Promise<Agent> {
     const agent = await this.getAgent(id);
     
-    await this.redisService.updateAgentStatus(id, status);
+    await this.storage.updateAgentStatus(id, status);
     
     // Add status change log
     const logEntry = createLogEntry('info', `Status changed to: ${status}`);
-    await this.redisService.addLogToAgent(id, logEntry);
+    await this.storage.addLogToAgent(id, logEntry);
     
     logger.info(`Agent ${id} status changed to: ${status}`);
     
@@ -79,7 +114,7 @@ export class AgentService {
 
   async addLogEntry(id: string, entry: Omit<LogEntry, 'id' | 'timestamp'>): Promise<void> {
     const logEntry = createLogEntry(entry.level, entry.message, entry.metadata);
-    await this.redisService.addLogToAgent(id, logEntry);
+    await this.storage.addLogToAgent(id, logEntry);
   }
 
   async updateAgentContext(id: string, context: Record<string, any>): Promise<Agent> {
@@ -88,10 +123,10 @@ export class AgentService {
     agent.context = { ...agent.context, ...sanitizeContext(context) };
     agent.lastActivity = new Date();
     
-    await this.redisService.saveAgent(agent);
+    await this.storage.saveAgent(agent);
     
     const logEntry = createLogEntry('info', 'Context updated');
-    await this.redisService.addLogToAgent(id, logEntry);
+    await this.storage.addLogToAgent(id, logEntry);
     
     return agent;
   }
@@ -118,21 +153,21 @@ export class AgentService {
       fromAgent: context.fromAgentId
     });
     
-    await this.redisService.addLogToAgent(context.fromAgentId, fromLogEntry);
-    await this.redisService.addLogToAgent(context.toAgentId, toLogEntry);
+    await this.storage.addLogToAgent(context.fromAgentId, fromLogEntry);
+    await this.storage.addLogToAgent(context.toAgentId, toLogEntry);
     
     logger.info(`Agent handoff: ${context.fromAgentId} -> ${context.toAgentId}`);
   }
 
   async deleteAgent(id: string): Promise<void> {
     const agent = await this.getAgent(id);
-    await this.redisService.deleteAgent(id);
+    await this.storage.deleteAgent(id);
     
     logger.info(`Agent deleted: ${id}`);
   }
 
   async getProjectStats(projectPath: string): Promise<Record<string, number>> {
-    return await this.redisService.getProjectStats(projectPath);
+    return await this.storage.getProjectStats(projectPath);
   }
 
   async getActiveAgents(): Promise<Agent[]> {
@@ -172,7 +207,7 @@ export class AgentService {
   }
 
   async cleanup(): Promise<void> {
-    await this.redisService.cleanup();
+    await this.storage.cleanup();
     logger.info('Agent cleanup completed');
   }
 

@@ -6,22 +6,44 @@ export class RedisService {
   private client: RedisClientType;
   private readonly keyPrefix = 'claude-agent:';
   private readonly retentionDays: number;
+  private connectionAttempted = false;
 
   constructor(url: string) {
-    this.client = createClient({ url });
+    this.client = createClient({ 
+      url,
+      socket: {
+        connectTimeout: 5000, // 5 second timeout
+        reconnectStrategy: false // Disable automatic reconnection
+      }
+    });
     this.retentionDays = parseInt(process.env.RETENTION_DAYS || '30');
-    
-    this.client.on('error', (err) => {
-      logger.error('Redis Client Error:', err);
-    });
-    
-    this.client.on('connect', () => {
-      logger.info('Connected to Redis');
-    });
   }
 
   async connect(): Promise<void> {
-    await this.client.connect();
+    if (this.connectionAttempted) {
+      throw new Error('Redis connection already attempted');
+    }
+    
+    this.connectionAttempted = true;
+    
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Redis connection timeout after 5 seconds'));
+      }, 5000);
+
+      this.client.on('connect', () => {
+        clearTimeout(timeout);
+        logger.info('✅ Connected to Redis');
+        resolve();
+      });
+
+      this.client.on('error', (err) => {
+        clearTimeout(timeout);
+        reject(err);
+      });
+
+      this.client.connect().catch(reject);
+    });
   }
 
   async disconnect(): Promise<void> {

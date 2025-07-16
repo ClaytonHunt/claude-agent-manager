@@ -22,9 +22,10 @@ async function startServer() {
   try {
     // Initialize services
     const redisService = new RedisService(REDIS_URL);
-    await redisService.connect();
     
     const agentService = new AgentService(redisService);
+    await agentService.initialize(); // This will handle Redis connection + fallback
+    
     const wsService = new WebSocketService();
     
     // Create Express app
@@ -70,15 +71,26 @@ async function startServer() {
       logger.info(`WebSocket server ready`);
     });
     
-    // Graceful shutdown
-    process.on('SIGTERM', async () => {
-      logger.info('Received SIGTERM, shutting down gracefully...');
-      await redisService.disconnect();
+    // Increase EventEmitter max listeners to prevent warnings
+    process.setMaxListeners(15);
+    
+    // Graceful shutdown for multiple signals
+    const gracefulShutdown = async (signal: string) => {
+      logger.info(`Received ${signal}, shutting down gracefully...`);
+      try {
+        await redisService.disconnect();
+      } catch (error) {
+        logger.warn('Error during Redis disconnect:', error);
+      }
       server.close(() => {
         logger.info('Server closed');
         process.exit(0);
       });
-    });
+    };
+    
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+    process.on('SIGUSR2', () => gracefulShutdown('SIGUSR2')); // tsx uses this
     
   } catch (error) {
     logger.error('Failed to start server:', error);

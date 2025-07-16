@@ -1,0 +1,58 @@
+# Page snapshot
+
+```yaml
+- banner:
+  - button:
+    - img
+  - heading "Claude Agent Manager" [level=1]
+  - img
+  - textbox "Search agents, projects..."
+  - text: Disconnected
+  - button:
+    - img
+  - button:
+    - img
+- complementary:
+  - navigation:
+    - link "Dashboard":
+      - /url: /
+      - img
+      - text: Dashboard
+    - link "Agents":
+      - /url: /agents
+      - img
+      - text: Agents
+    - link "Projects":
+      - /url: /projects
+      - img
+      - text: Projects
+    - link "Logs":
+      - /url: /logs
+      - img
+      - text: Logs
+    - link "Analytics":
+      - /url: /analytics
+      - img
+      - text: Analytics
+  - button "Collapse":
+    - img
+    - text: Collapse
+- main:
+  - heading "Logs" [level=1]
+  - paragraph: Real-time log stream from all agents
+  - button:
+    - img
+  - heading "Global Log Stream" [level=3]
+  - text: 0 / 0
+  - button "Disable auto-scroll":
+    - img
+  - button:
+    - img
+  - button "Export logs":
+    - img
+  - button "Clear logs":
+    - img
+  - text: No logs available
+  - heading "Real-time Connection Lost" [level=3]
+  - paragraph: The real-time connection to the server has been lost. Logs may not update automatically. The connection will be restored automatically when possible.
+```

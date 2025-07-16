@@ -1,0 +1,44 @@
+# Page snapshot
+
+```yaml
+- banner:
+  - button:
+    - img
+  - heading "Claude Agent Manager" [level=1]
+  - img
+  - textbox "Search agents, projects..."
+  - text: Disconnected
+  - button:
+    - img
+  - button:
+    - img
+- complementary:
+  - navigation:
+    - link "Dashboard":
+      - /url: /
+      - img
+      - text: Dashboard
+    - link "Agents":
+      - /url: /agents
+      - img
+      - text: Agents
+    - link "Projects":
+      - /url: /projects
+      - img
+      - text: Projects
+    - link "Logs":
+      - /url: /logs
+      - img
+      - text: Logs
+    - link "Analytics":
+      - /url: /analytics
+      - img
+      - text: Analytics
+  - button "Collapse":
+    - img
+    - text: Collapse
+- main:
+  - heading "Analytics" [level=1]
+  - paragraph: Insights and statistics about your agent ecosystem
+  - text: Error Failed to fetch
+```

@@ -1,105 +1,115 @@
-# Feature: Claude Agent Manager System
+# Feature Specification: Agent Detail Pages
 
-## FEATURE:
-Create a comprehensive monitoring and management system for Claude Code agents and subagents with two main components:
-1. An agentic base layer that can be used to start any project
-2. An agent management tool that monitors and manages currently running agents
+## Feature Overview
+**Priority**: HIGH  
+**Business Value**: Critical for user debugging and agent management  
+**User Impact**: Essential for effective agent monitoring and troubleshooting  
+**GitHub Issue**: Next roadmap priority (Agent cards currently show "TODO: Navigate to detail")
 
-The system should incorporate examples from `./claude-code-hooks-multi-agent-observability` and `./context-engineering-intro` projects, combining autonomous context-based engineering patterns for rapid development.
+## Problem Statement
+Currently, users cannot drill down into individual agent details for debugging. Agent cards on the dashboard show basic information but navigate to "TODO: Navigate to agent detail" instead of providing comprehensive agent views. This significantly limits users' ability to effectively debug agent issues, view detailed logs, monitor performance, and understand agent context.
 
-## BUSINESS VALUE:
-- **Developer Productivity**: Enable autonomous development through intelligent agent orchestration
-- **System Observability**: Provide real-time visibility into agent activities and status
-- **Context Preservation**: Maintain agent histories and context for seamless handoffs
-- **Rapid Development**: Accelerate project development through reusable agentic patterns
-- **Work Management**: Automate GitHub issue triage and task prioritization
+## User Stories
 
-## USER STORY:
-As a developer using Claude Code, I want a centralized system to monitor and manage all my Claude Code agents and subagents, so that I can understand their activities, track their progress, and ensure successful completion of development tasks.
+### Primary User Story
+**As a developer monitoring Claude Code agents**, I need detailed agent views so that I can effectively debug issues, monitor performance, and understand agent behavior in real-time.
 
-## REQUIREMENTS:
+### Supporting User Stories
+1. **As a developer**, I want to click on an agent card and see comprehensive agent details including full context, logs, and metadata
+2. **As a developer**, I want to see real-time tool execution timelines to understand what an agent is currently doing
+3. **As a developer**, I want to view agent performance metrics to identify bottlenecks and optimization opportunities
+4. **As a developer**, I want to see detailed error information and stack traces when agents encounter issues
+5. **As a developer**, I want to perform actions on agents (restart, pause, handoff) from the detail view
 
-### Core Components:
-1. **Agentic Base Layer**
-   - Reusable foundation for any project
-   - Lives at the top level of each application
-   - Incorporates context engineering patterns
-   - Enables autonomous development workflows
+## Acceptance Criteria
 
-2. **Management & Monitoring Tool**
-   - Runs as a singleton instance for the environment
-   - Local service (preferably daemon)
-   - Real-time agent tracking and status updates
-   - Log aggregation and viewing
-   - Agent history retention until dismissed
+### Core Functionality
+- [ ] Agent cards navigate to individual agent detail pages (`/agents/:id`)
+- [ ] Agent detail page displays comprehensive agent information
+- [ ] Real-time updates via WebSocket for live agent monitoring
+- [ ] Responsive design for desktop and mobile access
+- [ ] Error handling for non-existent or deleted agents
 
-### Technical Requirements:
-- **Backend**: Node.js with TypeScript, Express or Fastify
-- **Frontend**: React with rsbuild (not Vite)
-- **State Management**: Redis with configurable retention policies
-- **Communication**: WebSockets for real-time updates
-- **Integration**: Claude Code hooks and webhooks
+### Agent Detail Page Components
+- [ ] **Agent Overview**: Status, project, creation time, last activity
+- [ ] **Agent Metrics**: Performance statistics, tool usage, execution times
+- [ ] **Agent Logs**: Filterable, searchable log viewer with infinite scroll
+- [ ] **Agent Context**: JSON viewer for agent context and metadata
+- [ ] **Agent Actions**: Buttons for restart, pause, handoff, delete operations
+- [ ] **Tool Timeline**: Chronological view of tool executions with status
 
-### Communication Architecture:
-- Claude Code hooks for agent event capture
-- Webhooks for server-to-application updates
-- API or alternative method for agent-to-server communication
-- Stretch goal: Two-way communication enabling web app to spin up Claude Code instances
+### Technical Requirements
+- [ ] React Router integration for `/agents/:id` routes
+- [ ] API endpoint for individual agent details (`GET /api/agents/:id`)
+- [ ] WebSocket integration for real-time agent updates
+- [ ] Loading states and skeleton loaders
+- [ ] Error boundaries for component failure handling
+- [ ] Performance optimization for large log datasets
 
-### GitHub Integration:
-- Create new `feature-from-github-issue` command
-- Pull issues from current project repository
-- Automated issue triage based on business value and effort
-- Leave triage notes/tags in issues
-- Skip already-triaged issues
-- Select highest value, lowest effort issues for development
+## Implementation Plan
 
-### Agent Collaboration:
-- Async subagents act as a team
-- Leave appropriate context for other team members
-- Tag-team approach for continuous work
-- MVP condition must be satisfied before work stops
-- High code quality and passing unit tests required
+### Phase 1: Core Navigation and Basic Detail View
+1. **React Router Setup**: Configure `/agents/:id` routes
+2. **Basic Detail Page**: Create `AgentDetailPage` component
+3. **Navigation Fix**: Update `AgentCard` to navigate to detail page
+4. **API Enhancement**: Extend backend for agent details
 
-## ACCEPTANCE CRITERIA:
-- [ ] Agentic base layer can be installed in any project
-- [ ] Management tool runs as singleton instance
-- [ ] Real-time agent registration and status monitoring
-- [ ] Log aggregation and viewing functionality
-- [ ] Agent histories retained until user dismissal
-- [ ] Claude Code hooks integration working
-- [ ] WebSocket communication established
-- [ ] GitHub issue triage automation functional
-- [ ] Subagents can handoff work with context preservation
-- [ ] MVP includes high code quality and passing tests
+### Phase 2: Comprehensive Detail Components
+1. **Agent Overview Component**: Status, metadata, basic information
+2. **Agent Metrics Component**: Performance statistics and charts
+3. **Agent Logs Component**: Advanced log viewer with filtering
+4. **Real-time Updates**: WebSocket integration for live data
 
-## TECHNICAL CONSIDERATIONS:
-- Redis retention policies must support indefinite storage until user dismissal
-- Consider TTL with refresh on access for efficient memory usage
-- Daemon process management for consistent availability
-- Port/domain strategy for local service access
-- WebSocket connection resilience and reconnection logic
-- Security considerations for agent authentication
+### Phase 3: Advanced Features
+1. **Agent Actions**: Operational buttons (restart, pause, etc.)
+2. **Tool Timeline**: Chronological view of agent tool usage
+3. **Agent Context Viewer**: JSON inspector for agent data
+4. **Performance Optimization**: Virtual scrolling, lazy loading
 
-## EXAMPLES:
-- Reference: `./claude-code-hooks-multi-agent-observability` for multi-agent development patterns
-- Reference: `./context-engineering-intro` for context engineering patterns
-- User-level commands for extended context engineering concepts
+## TDD Implementation Strategy
 
-## DOCUMENTATION:
-- Claude Code documentation for current features and usage
-- Claude Code hooks and webhooks API reference
-- Context engineering patterns and best practices
-- GitHub API for issue management
+### RED-GREEN-REFACTOR Cycles
+1. **🔴 RED**: Write test for agent detail page routing
+2. **🟢 GREEN**: Implement basic agent detail page and routing
+3. **♻️ REFACTOR**: Extract reusable components and optimize
 
-## OTHER CONSIDERATIONS:
-- **MVP Focus**: Prioritize monitoring capabilities (registration, status, logs)
-- **Post-MVP**: Agent lifecycle management, performance metrics
-- **Stretch Goals**: Two-way communication, web-based agent instantiation
-- **Performance**: Choose technologies balancing performance and development speed
-- **Scalability**: Design for future distributed deployment options
+### Incremental Checkpoints
+1. **Checkpoint 1**: Agent detail routing works
+2. **Checkpoint 2**: Basic agent information displays
+3. **Checkpoint 3**: Real-time updates working
+4. **Checkpoint 4**: Complete agent detail functionality
 
-## TRACEABILITY:
-- **Source**: User requirements description
-- **Created**: 2025-07-15 18:24:00
-- **Created by**: User input via feature-from-description command
+## File Locations and Dependencies
+
+### Files to Create/Modify
+```
+packages/client/src/
+├── pages/
+│   └── AgentDetailPage.tsx        # 🆕 CREATE
+├── components/
+│   ├── AgentDetail/               # 🆕 CREATE
+│   │   ├── AgentOverview.tsx
+│   │   ├── AgentMetrics.tsx
+│   │   ├── AgentLogs.tsx
+│   │   └── AgentActions.tsx
+│   └── AgentCard.tsx              # 🔧 MODIFY: Add navigation
+├── hooks/
+│   └── useAgentDetail.ts          # 🆕 CREATE
+└── __tests__/                     # 🆕 CREATE: Unit tests
+    ├── pages/
+    └── components/
+
+packages/server/src/
+├── routes/
+│   └── agents.ts                  # 🔧 ENHANCE: Agent detail endpoints
+└── services/
+    └── AgentService.ts            # 🔧 ENHANCE: Detail queries
+```
+
+## Success Metrics
+- **Navigation Success Rate**: 100% successful navigation from cards to detail
+- **Page Load Time**: < 2 seconds for agent detail page
+- **User Engagement**: Increased time spent in agent detail views
+- **Test Coverage**: > 90% coverage for new components
+
+This feature will dramatically improve the debugging and monitoring capabilities of the Claude Agent Manager by providing comprehensive agent detail views that users desperately need.

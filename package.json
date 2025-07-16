@@ -7,12 +7,22 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build -w packages/shared && npm run build -w packages/server",
-    "dev": "npm run dev -w packages/server",
-    "test": "npm run test -w packages/shared && npm run test -w packages/server",
+    "kill-ports": "fuser -k 3000/tcp 3001/tcp 9090/tcp 2>/dev/null || true",
+    "build": "npm run build -w packages/shared && npm run build -w packages/server && npm run build -w packages/client",
+    "dev": "npm run kill-ports && concurrently \"npm run dev -w packages/server\" \"npm run dev -w packages/client\"",
+    "test": "npm run test -w packages/shared && npm run test -w packages/server && npm run test -w packages/client",
     "test:all": "npm run test",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
     "clean": "rimraf packages/*/dist packages/*/build",
-    "setup": "npm install && npm run build"
+    "setup": "npm install && npm run build",
+    "feature:status": "echo 'Current feature:' && [ -f '.claude/feature.md' ] && head -1 .claude/feature.md || echo 'No active feature'",
+    "feature:archive": "node -e \"const fs=require('fs'); const date=new Date().toISOString().split('T')[0]; if(fs.existsSync('.claude/feature.md')) { const content=fs.readFileSync('.claude/feature.md','utf8'); const title=content.match(/# Feature.*?: (.+)/)?.[1]?.replace(/\\W+/g,'-').toLowerCase() || 'feature'; const filename=\\`docs/features/completed/\\${title}-\\${date}.md\\`; fs.writeFileSync(filename, content); console.log(\\`Archived: \\${filename}\\`); fs.unlinkSync('.claude/feature.md'); } else { console.log('No feature.md to archive'); }\"",
+    "feature:new": "npm run feature:archive 2>/dev/null || true && echo 'Ready for new feature - create .claude/feature.md'",
+    "hooks:install": "node scripts/install-hooks.js",
+    "hooks:setup": "npm run hooks:install",
+    "hooks:status": "node scripts/install-hooks.js --status"
   },
   "keywords": [
     "claude",
@@ -24,6 +34,7 @@
   "author": "Clayton Hunt",
   "license": "MIT",
   "devDependencies": {
+    "@playwright/test": "^1.54.1",
     "@types/node": "^20.14.10",
     "concurrently": "^8.2.2",
     "rimraf": "^5.0.7",

@@ -17,8 +17,8 @@ const agentQuerySchema = z.object({
   status: z.enum(['idle', 'active', 'error', 'handoff', 'complete']).optional(),
   parentId: z.string().optional(),
   tags: z.array(z.string()).optional(),
-  limit: z.number().int().positive().optional(),
-  offset: z.number().int().min(0).optional()
+  limit: z.string().transform(val => parseInt(val, 10)).pipe(z.number().int().positive()).optional(),
+  offset: z.string().transform(val => parseInt(val, 10)).pipe(z.number().int().min(0)).optional()
 });
 
 const logEntrySchema = z.object({
@@ -76,6 +76,39 @@ export function agentRoutes(
   router.get('/:id', async (req: Request, res: Response) => {
     const agent = await agentService.getAgent(req.params.id);
     res.json(agent);
+  });
+
+  // Update agent (full update)
+  router.put('/:id', async (req: Request, res: Response) => {
+    try {
+      const updateData = req.body;
+      const agentId = req.params.id;
+      
+      // Update status if provided
+      if (updateData.status) {
+        if (!['idle', 'active', 'error', 'handoff', 'complete'].includes(updateData.status)) {
+          throw new ValidationError('Invalid status value');
+        }
+        await agentService.updateAgentStatus(agentId, updateData.status);
+      }
+      
+      // Update context if provided
+      if (updateData.context) {
+        await agentService.updateAgentContext(agentId, updateData.context);
+      }
+      
+      // Get updated agent
+      const agent = await agentService.getAgent(agentId);
+      
+      wsService.broadcastAgentUpdate(agent);
+      
+      res.json(agent);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new ValidationError(error.errors.map(e => e.message).join(', '));
+      }
+      throw error;
+    }
   });
 
   // Update agent status

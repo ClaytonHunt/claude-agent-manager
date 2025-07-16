@@ -1,163 +1,120 @@
-# Current Task: Phase 1.1 - Clean Up Agentic Base Package
+# CURRENT TASK: Set up routing - Add /agents/:id route to App.tsx
 
-## CURRENT TASK
-**Task**: Remove all business logic from agentic-base to transform it into a pure starter kit  
-**Priority**: High  
-**Estimated Time**: 1-2 hours  
-**GitHub Issue**: https://github.com/ClaytonHunt/claude-agent-manager/issues/1
-**Parent Feature**: Architectural Realignment & Feature Completion
+## Task Overview
+**Sprint**: Foundation (Days 1-3)  
+**Task ID**: foundation-1  
+**Priority**: HIGH  
+**Objective**: Implement React Router route for individual agent detail pages using flat routing structure
 
-## SPECIALIST ANALYSIS
+## ASYNC SPECIALIST ANALYSIS
 
-### 🏗️ Architecture Reviewer
-**Scope**: Transform agentic-base from application to pure starter kit
-**Recommendations**: 
-- Remove ALL business logic - CLI tools, client libraries, hook managers
-- Keep only templates, setup files, and documentation
-- Ensure zero dependencies on business logic packages
-**Files to Review**: 
-- packages/agentic-base/src/: All business logic files to be deleted
-- packages/agentic-base/package.json: Remove application dependencies
+### 🏗️ Architecture Specialist Findings
+- **Recommended Approach**: Use flat routing structure `/agents/:id` for better UX and consistency
+- **Integration**: No changes needed to AppLayout - already uses `<Outlet />` for route rendering
+- **Route Structure**: Add single route alongside existing routes in App.tsx
+- **Parameter Handling**: Use useParams hook with UUID validation and error handling
+- **Navigation**: Update AgentCard onClick to use `navigate(\`/agents/${agent.id}\`)`
 
-### 🧪 Quality Engineer
-**Testing Approach**: Verify removal doesn't break existing functionality
-**Test Files**: 
-- No tests needed for deletion, but verify build still works
-**Coverage Target**: N/A for deletion task
+### 🧪 Quality Specialist Findings  
+- **CRITICAL ISSUE**: Jest module resolution for `@/utils/api` imports must be fixed before testing
+- **Testing Strategy**: Need comprehensive route parameter validation tests
+- **Mock Strategy**: Mock useParams and useNavigate hooks for unit tests
+- **E2E Testing**: Implement navigation flow tests from agent card to detail page
+- **Validation**: Add tests for invalid agent IDs and error handling
 
-### 👨‍💻 Senior Developer
-**Implementation Notes**: Clean deletion with proper dependency cleanup
-**Patterns to Use**: 
-- Verify no other packages depend on deleted code
-- Clean package.json of unused dependencies
-**Code Review Focus**: 
-- Complete removal of business logic
-- Proper dependency cleanup
+### 📊 Performance Specialist Findings
+- **Code Splitting**: Implement lazy loading for AgentDetailPage from the start
+- **Bundle Impact**: Route-based splitting can reduce initial bundle by 25-30%
+- **RSbuild Config**: Add forceSplitting for agent-detail chunk
+- **Memory Management**: Use React.Suspense with proper fallback components
+- **Caching**: Plan for agent data caching in future iterations
 
-### 🔧 DevOps Engineer
-**Build Impact**: Remove packages from build pipeline temporarily
-**Environment Considerations**: Build should still work after cleanup
-**Dependencies**: Remove CLI and client library dependencies
-
-### 🎨 Design Reviewer
-**UI/UX Impact**: No UI impact for this cleanup task
-**Accessibility**: N/A
-**Design Consistency**: N/A
-
-### 📋 Product Owner
-**Business Logic**: Remove application logic to create true starter kit
-**User Impact**: Sets foundation for proper starter kit templates
-**Acceptance Criteria**: 
-- [ ] All CLI tools deleted (feature-from-github-issue.ts)
-- [ ] All client libraries deleted (AgentManagerClient.ts)
-- [ ] All hook managers deleted (ClaudeCodeHookManager.ts)
-- [ ] Package size reduced from 734 lines to ~50 lines
-- [ ] Only template files and setup utilities remain
+### 🔒 Security Specialist Findings
+- **CRITICAL GAPS**: No authentication/authorization system (acknowledged for development)
+- **Route Validation**: Need robust agent ID format validation (UUID pattern)
+- **Error Handling**: Prevent information disclosure in error messages
+- **Input Sanitization**: Sanitize route parameters to prevent injection attacks
+- **Rate Limiting**: Plan for API rate limiting in future security implementation
 
 ## IMPLEMENTATION APPROACH
 
-### TDD Cycle 1: Analyze Current Structure
-**Focus**: Understand what needs to be deleted
-- [ ] **RED**: Document current structure and dependencies
-- [ ] **GREEN**: Create deletion plan
-- [ ] **REFACTOR**: Verify plan is complete
+### Phase 1: Basic Route Setup (TDD - RED Phase)
+1. **Write failing test** for AgentDetailPage route
+2. **Add route to App.tsx** with lazy loading
+3. **Create basic AgentDetailPage** component
+4. **Update pages index.ts** to export new page
 
-### TDD Cycle 2: Remove Business Logic Files
-**Focus**: Delete all application code
-- [ ] **RED**: Verify files exist before deletion
-- [ ] **GREEN**: Delete CLI tools, client libraries, hook managers
-- [ ] **REFACTOR**: Clean up empty directories
+### Phase 2: Route Implementation (TDD - GREEN Phase)
+1. **Fix Jest configuration** for module resolution
+2. **Implement route parameter validation**
+3. **Add error handling** for invalid/missing agents
+4. **Update AgentCard navigation** onClick handler
 
-### TDD Cycle 3: Clean Dependencies
-**Focus**: Remove unused dependencies from package.json
-- [ ] **RED**: Identify unused dependencies
-- [ ] **GREEN**: Remove unused dependencies
-- [ ] **REFACTOR**: Verify build still works
+### Phase 3: Testing & Optimization (TDD - REFACTOR Phase)
+1. **Add comprehensive unit tests** for route functionality
+2. **Implement performance optimizations** (lazy loading, suspense)
+3. **Add E2E tests** for navigation flow
+4. **Validate security considerations** (input validation)
 
-## FILE CHANGES
+## VALIDATION GATES
 
-**Files to Delete**:
-- packages/agentic-base/src/cli/feature-from-github-issue.ts: CLI tool (331 lines)
-- packages/agentic-base/src/utils/agent-manager-client.ts: Client library (231 lines)
-- packages/agentic-base/src/hooks/claude-code-hooks.ts: Hook manager (172 lines)
-- packages/agentic-base/src/cli/: Entire CLI directory
-- packages/agentic-base/.claude/commands/feature-from-github-issue.md: Incorrectly placed command
+### Pre-Implementation Tests (RED Phase)
+```bash
+# Fix Jest configuration first
+npm run test -w packages/client -- --testNamePattern="should render loading state"
 
-**Files to Modify**:
-- packages/agentic-base/package.json: Remove CLI and client dependencies
-- packages/agentic-base/src/index.ts: Remove exports of deleted modules
+# Test route parameter handling
+npm run test -w packages/client -- --testPathPattern="routing"
+```
 
-**Files to Keep**:
-- packages/agentic-base/README.md: Will be updated in Phase 1.2
-- packages/agentic-base/package.json: Structure kept, dependencies cleaned
+### Implementation Tests (GREEN Phase)
+```bash
+# Unit tests for AgentDetailPage
+npm run test -w packages/client -- --testPathPattern="AgentDetailPage"
 
-## VALIDATION
+# Integration tests for routing
+npm run test -w packages/client -- --testNamePattern="route"
+```
 
-### Unit Tests
-- [ ] Build succeeds after deletion
-- [ ] No broken imports remain
-- [ ] Package.json is valid
-- [ ] Workspace configuration still works
+### Validation Tests (REFACTOR Phase)
+```bash
+# Full test suite
+npm run test:all
 
-### Integration Tests
-- [ ] Root build command works
-- [ ] Other packages not affected
-- [ ] Monorepo structure intact
+# E2E navigation tests
+npm run test:e2e -- --grep "navigation"
 
-### Manual Testing
-- [ ] Can navigate to agentic-base directory
-- [ ] Package structure is clean
-- [ ] No business logic remains
+# Build validation
+npm run build
 
-## DEPENDENCIES
+# Performance validation
+npm run dev  # Check lazy loading works
+```
 
-**Blocked By**: None (first task in sequence)
+## PROGRESS TRACKING
 
-**Blocks**: 
-- Phase 1.2: Create agentic-base starter kit templates
-- Phase 1.3: Remove incorrect CLI package
+- **Current Status**: ✅ COMPLETED - Basic routing implementation finished
+- **Blockers**: ✅ RESOLVED - Jest module resolution fixed
+- **Dependencies**: None - task completed independently
+- **Next Steps**: Ready to proceed to foundation-4 (Create AgentDetailHeader) and foundation-5 (Implement loading/error states)
 
-**External Dependencies**: 
-- None for deletion task
+## SUCCESS CRITERIA
 
-## CONTEXT FOR NEXT DEVELOPER
+- [x] Route `/agents/:id` accessible and renders AgentDetailPage
+- [x] Lazy loading implemented with Suspense fallback
+- [x] Route parameter validation prevents invalid IDs
+- [x] Error handling for non-existent agents
+- [x] Navigation from AgentCard to detail page works
+- [x] Back navigation to agents list works
+- [x] Jest tests pass with proper module resolution
+- [x] Build process includes agent-detail chunk splitting
+- [x] Performance: < 500ms navigation from card to detail page
 
-### Key Decisions Made
-- Complete removal of business logic to create pure starter kit
-- Preserving package structure for template creation in Phase 1.2
-- Clean dependency removal to avoid build issues
+## SECURITY CONSIDERATIONS
 
-### Gotchas to Watch For
-- Don't delete package.json entirely - just clean dependencies
-- Verify no other packages import from deleted modules
-- Keep directory structure for template creation
+- **Input Validation**: Agent ID format validation implemented
+- **Error Handling**: Generic error messages prevent information disclosure
+- **Future Enhancement**: Authentication/authorization to be added in security phase
+- **Rate Limiting**: To be implemented at API level in future iteration
 
-### Resources
-- Work Analysis: .claude/work-analysis.md (corrected architectural context)
-- GitHub Issue: https://github.com/ClaytonHunt/claude-agent-manager/issues/1
-- Current agentic-base: packages/agentic-base/src/ (to be cleaned)
-
-## PROGRESS LOG
-
-**Started**: 2025-07-15 (current session)
-**Current Status**: In Progress - TDD Cycle 1
-**GitHub Issue**: #1 - Phase 1.1: Clean up agentic-base package
-**Completed Milestones**: 
-- Requirements analysis ✅
-- GitHub issue created ✅
-- Specialist team consultation ✅
-
-**Current Work**: 
-Analyzing current agentic-base structure for complete business logic removal
-
-**Next Steps**: 
-1. Document current file structure and sizes
-2. Identify all business logic files to delete
-3. Remove CLI tools, client libraries, hook managers
-4. Clean package.json dependencies
-5. Verify build still works
-
-**Time Tracking**: 
-- Estimated: 1-2 hours
-- Actual: Starting now
-- Remaining: 1-2 hours
+This focused implementation approach ensures a solid foundation for agent detail pages while incorporating performance optimization and security considerations from the start.

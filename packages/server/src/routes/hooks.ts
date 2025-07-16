@@ -131,6 +131,30 @@ async function handleClaudeCodeHook(
         await handleTaskCompleted(agentId, data, agentService, wsService);
         break;
         
+      case 'pre_tool_use':
+        await handlePreToolUse(agentId, data, agentService, wsService);
+        break;
+        
+      case 'post_tool_use':
+        await handlePostToolUse(agentId, data, agentService, wsService);
+        break;
+        
+      case 'conversation_start':
+        await handleConversationStart(agentId, data, agentService, wsService);
+        break;
+        
+      case 'conversation_end':
+        await handleConversationEnd(agentId, data, agentService, wsService);
+        break;
+        
+      case 'stop':
+        await handleStop(agentId, data, agentService, wsService);
+        break;
+        
+      case 'notification':
+        await handleNotification(agentId, data, agentService, wsService);
+        break;
+        
       default:
         logger.warn(`Unknown Claude Code hook type: ${type}`);
     }
@@ -329,6 +353,179 @@ async function handleAgentError(
     });
   } catch (err) {
     logger.error(`Error handling agent error: ${err}`);
+  }
+}
+
+async function handlePreToolUse(
+  agentId: string,
+  data: any,
+  agentService: AgentService,
+  wsService: WebSocketService
+): Promise<void> {
+  try {
+    // Ensure agent exists - register if not found
+    try {
+      await agentService.updateAgentStatus(agentId, 'active');
+    } catch (error) {
+      if (error.message.includes('not found')) {
+        // Auto-register agent if it doesn't exist
+        await agentService.registerAgent({
+          id: agentId,
+          projectPath: data.projectPath || process.cwd(),
+          context: data.context || {},
+          tags: data.tags || ['claude-code']
+        });
+        await agentService.updateAgentStatus(agentId, 'active');
+      } else {
+        throw error;
+      }
+    }
+    
+    await agentService.addLogEntry(agentId, {
+      level: 'info',
+      message: `Starting tool: ${data.tool_name || data.tool || 'unknown'}`,
+      metadata: { ...data, phase: 'pre_tool_use' }
+    });
+    
+    // Broadcast real-time update
+    wsService.broadcast('tool_started', {
+      agentId,
+      tool: data.tool_name || data.tool,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error(`Error handling pre tool use: ${error}`);
+  }
+}
+
+async function handlePostToolUse(
+  agentId: string,
+  data: any,
+  agentService: AgentService,
+  wsService: WebSocketService
+): Promise<void> {
+  try {
+    await agentService.addLogEntry(agentId, {
+      level: 'info',
+      message: `Completed tool: ${data.tool_name || data.tool || 'unknown'}`,
+      metadata: { ...data, phase: 'post_tool_use' }
+    });
+    
+    // Broadcast real-time update
+    wsService.broadcast('tool_completed', {
+      agentId,
+      tool: data.tool_name || data.tool,
+      timestamp: new Date().toISOString(),
+      success: !data.error
+    });
+  } catch (error) {
+    logger.error(`Error handling post tool use: ${error}`);
+  }
+}
+
+async function handleConversationStart(
+  agentId: string,
+  data: any,
+  agentService: AgentService,
+  wsService: WebSocketService
+): Promise<void> {
+  try {
+    await agentService.registerAgent({
+      id: agentId,
+      projectPath: data.projectPath || 'unknown',
+      context: data.context || {},
+      tags: data.tags || []
+    });
+    
+    await agentService.addLogEntry(agentId, {
+      level: 'info',
+      message: 'Conversation started',
+      metadata: data
+    });
+    
+    // Broadcast real-time update
+    wsService.broadcast('agent_started', {
+      agentId,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error(`Error handling conversation start: ${error}`);
+  }
+}
+
+async function handleConversationEnd(
+  agentId: string,
+  data: any,
+  agentService: AgentService,
+  wsService: WebSocketService
+): Promise<void> {
+  try {
+    await agentService.updateAgentStatus(agentId, 'complete');
+    await agentService.addLogEntry(agentId, {
+      level: 'info',
+      message: 'Conversation ended',
+      metadata: data
+    });
+    
+    // Broadcast real-time update
+    wsService.broadcast('agent_stopped', {
+      agentId,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error(`Error handling conversation end: ${error}`);
+  }
+}
+
+async function handleStop(
+  agentId: string,
+  data: any,
+  agentService: AgentService,
+  wsService: WebSocketService
+): Promise<void> {
+  try {
+    await agentService.updateAgentStatus(agentId, 'complete');
+    await agentService.addLogEntry(agentId, {
+      level: 'info',
+      message: 'Agent stopped',
+      metadata: { ...data, phase: 'stop' }
+    });
+    
+    // Broadcast real-time update
+    wsService.broadcast('agent_stopped', {
+      agentId,
+      timestamp: new Date().toISOString(),
+      reason: data.reason || 'manual_stop'
+    });
+  } catch (error) {
+    logger.error(`Error handling stop: ${error}`);
+  }
+}
+
+async function handleNotification(
+  agentId: string,
+  data: any,
+  agentService: AgentService,
+  wsService: WebSocketService
+): Promise<void> {
+  try {
+    await agentService.addLogEntry(agentId, {
+      level: data.level || 'info',
+      message: data.message || 'Notification received',
+      metadata: { ...data, phase: 'notification' }
+    });
+    
+    // Broadcast real-time update for important notifications
+    if (data.level === 'error' || data.level === 'warn') {
+      wsService.broadcast('agent_notification', {
+        agentId,
+        level: data.level,
+        message: data.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    logger.error(`Error handling notification: ${error}`);
   }
 }
 
