@@ -27,6 +27,7 @@ async function startServer() {
     await agentService.initialize(); // This will handle Redis connection + fallback
     
     const wsService = new WebSocketService();
+    agentService.setWebSocketService(wsService); // Inject WebSocket service
     
     // Create Express app
     const app = express();
@@ -77,20 +78,51 @@ async function startServer() {
     // Graceful shutdown for multiple signals
     const gracefulShutdown = async (signal: string) => {
       logger.info(`Received ${signal}, shutting down gracefully...`);
+      
+      // Close WebSocket service first
+      try {
+        wsService.shutdown();
+        logger.info('WebSocket service closed');
+      } catch (error) {
+        logger.warn('Error during WebSocket shutdown:', error);
+      }
+      
+      // Close Redis connection
       try {
         await redisService.disconnect();
+        logger.info('Redis disconnected');
       } catch (error) {
         logger.warn('Error during Redis disconnect:', error);
       }
+      
+      // Close HTTP server
       server.close(() => {
-        logger.info('Server closed');
+        logger.info('HTTP server closed');
         process.exit(0);
       });
+      
+      // Force exit after 5 seconds if graceful shutdown fails
+      setTimeout(() => {
+        logger.warn('Force exiting after timeout');
+        process.exit(1);
+      }, 5000);
     };
     
     process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
     process.on('SIGINT', () => gracefulShutdown('SIGINT'));
     process.on('SIGUSR2', () => gracefulShutdown('SIGUSR2')); // tsx uses this
+    process.on('SIGHUP', () => gracefulShutdown('SIGHUP')); // terminal hang up
+    
+    // Handle uncaught exceptions and unhandled rejections
+    process.on('uncaughtException', (error) => {
+      logger.error('Uncaught exception:', error);
+      gracefulShutdown('UNCAUGHT_EXCEPTION');
+    });
+    
+    process.on('unhandledRejection', (reason, promise) => {
+      logger.error('Unhandled rejection at:', promise, 'reason:', reason);
+      gracefulShutdown('UNHANDLED_REJECTION');
+    });
     
   } catch (error) {
     logger.error('Failed to start server:', error);

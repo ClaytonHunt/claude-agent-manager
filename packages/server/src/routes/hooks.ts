@@ -5,6 +5,41 @@ import { HookEvent, ValidationError } from '@claude-agent-manager/shared';
 import { z } from 'zod';
 import { logger } from '../utils/logger';
 
+// Helper function to extract specialist type from task description
+function extractSpecialistType(description: string): string {
+  const desc = description.toLowerCase();
+  
+  if (desc.includes('architecture') || desc.includes('system design')) {
+    return 'architecture-specialist';
+  }
+  if (desc.includes('quality') || desc.includes('testing') || desc.includes('qa')) {
+    return 'quality-specialist';
+  }
+  if (desc.includes('security') || desc.includes('threat') || desc.includes('vulnerability')) {
+    return 'security-specialist';
+  }
+  if (desc.includes('performance') || desc.includes('optimization') || desc.includes('profiling')) {
+    return 'performance-specialist';
+  }
+  if (desc.includes('frontend') || desc.includes('ui') || desc.includes('react') || desc.includes('component')) {
+    return 'frontend-specialist';
+  }
+  if (desc.includes('backend') || desc.includes('api') || desc.includes('database') || desc.includes('server')) {
+    return 'backend-specialist';
+  }
+  if (desc.includes('devops') || desc.includes('deployment') || desc.includes('ci/cd') || desc.includes('build')) {
+    return 'devops-specialist';
+  }
+  if (desc.includes('documentation') || desc.includes('tech writer') || desc.includes('docs')) {
+    return 'tech-writer-specialist';
+  }
+  if (desc.includes('code review') || desc.includes('review')) {
+    return 'code-review-specialist';
+  }
+  
+  return 'general-specialist';
+}
+
 const hookEventSchema = z.object({
   type: z.string(),
   agentId: z.string(),
@@ -170,7 +205,24 @@ async function handleAgentStarted(
   wsService: WebSocketService
 ): Promise<void> {
   try {
-    await agentService.updateAgentStatus(agentId, 'active');
+    // Ensure agent exists - register if not found
+    try {
+      await agentService.updateAgentStatus(agentId, 'active');
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('not found')) {
+        // Auto-register agent if it doesn't exist
+        await agentService.registerAgent({
+          id: agentId,
+          projectPath: data.projectPath || data.workingDirectory || process.cwd(),
+          context: data.context || {},
+          tags: ['claude-code']
+        });
+        await agentService.updateAgentStatus(agentId, 'active');
+      } else {
+        throw error;
+      }
+    }
+    
     await agentService.addLogEntry(agentId, {
       level: 'info',
       message: 'Agent started',
@@ -188,7 +240,24 @@ async function handleAgentStopped(
   wsService: WebSocketService
 ): Promise<void> {
   try {
-    await agentService.updateAgentStatus(agentId, 'complete');
+    // Ensure agent exists - register if not found
+    try {
+      await agentService.updateAgentStatus(agentId, 'complete');
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('not found')) {
+        // Auto-register agent if it doesn't exist
+        await agentService.registerAgent({
+          id: agentId,
+          projectPath: data.projectPath || data.workingDirectory || process.cwd(),
+          context: data.context || {},
+          tags: ['claude-code']
+        });
+        await agentService.updateAgentStatus(agentId, 'complete');
+      } else {
+        throw error;
+      }
+    }
+    
     await agentService.addLogEntry(agentId, {
       level: 'info',
       message: 'Agent stopped',
@@ -206,7 +275,24 @@ async function handleAgentErrored(
   wsService: WebSocketService
 ): Promise<void> {
   try {
-    await agentService.updateAgentStatus(agentId, 'error');
+    // Ensure agent exists - register if not found
+    try {
+      await agentService.updateAgentStatus(agentId, 'error');
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('not found')) {
+        // Auto-register agent if it doesn't exist
+        await agentService.registerAgent({
+          id: agentId,
+          projectPath: data.projectPath || data.workingDirectory || process.cwd(),
+          context: data.context || {},
+          tags: ['claude-code']
+        });
+        await agentService.updateAgentStatus(agentId, 'error');
+      } else {
+        throw error;
+      }
+    }
+    
     await agentService.addLogEntry(agentId, {
       level: 'error',
       message: `Agent error: ${data.error || 'Unknown error'}`,
@@ -367,13 +453,32 @@ async function handlePreToolUse(
     try {
       await agentService.updateAgentStatus(agentId, 'active');
     } catch (error) {
-      if (error.message.includes('not found')) {
+      if (error instanceof Error && error.message.includes('not found')) {
         // Auto-register agent if it doesn't exist
+        // For Task agents, use the description for better naming
+        const taskDescription = data.toolInput?.description || data.tool_input?.description;
+        const toolName = data.toolName || data.tool_name || data.tool;
+        
+        let agentTags = ['claude-code'];
+        let agentContext = data.context || {};
+        
+        // Enhance context for Task agents
+        if (toolName === 'Task' && taskDescription) {
+          agentTags.push('specialist-subagent');
+          agentContext = {
+            ...agentContext,
+            taskDescription,
+            toolName,
+            specialist: extractSpecialistType(taskDescription),
+            createdFrom: 'Task tool call'
+          };
+        }
+        
         await agentService.registerAgent({
           id: agentId,
-          projectPath: data.projectPath || process.cwd(),
-          context: data.context || {},
-          tags: data.tags || ['claude-code']
+          projectPath: data.projectPath || data.workingDirectory || process.cwd(),
+          context: agentContext,
+          tags: agentTags
         });
         await agentService.updateAgentStatus(agentId, 'active');
       } else {
@@ -381,18 +486,27 @@ async function handlePreToolUse(
       }
     }
     
+    // Create descriptive log message based on available data
+    const taskDescription = data.toolInput?.description || data.tool_input?.description;
+    const toolName = data.toolName || data.tool_name || data.tool || 'unknown';
+    
+    let logMessage = `Starting tool: ${toolName}`;
+    if (toolName === 'Task' && taskDescription) {
+      logMessage = `Starting specialist analysis: ${taskDescription}`;
+    }
+    
     await agentService.addLogEntry(agentId, {
       level: 'info',
-      message: `Starting tool: ${data.tool_name || data.tool || 'unknown'}`,
-      metadata: { ...data, phase: 'pre_tool_use' }
+      message: logMessage,
+      metadata: { ...data, phase: 'pre_tool_use', taskDescription }
     });
     
     // Broadcast real-time update
-    wsService.broadcast('tool_started', {
+    wsService.broadcastEvent('tool_started', {
       agentId,
       tool: data.tool_name || data.tool,
       timestamp: new Date().toISOString()
-    });
+    }, `agent:${agentId}`);
   } catch (error) {
     logger.error(`Error handling pre tool use: ${error}`);
   }
@@ -412,12 +526,12 @@ async function handlePostToolUse(
     });
     
     // Broadcast real-time update
-    wsService.broadcast('tool_completed', {
+    wsService.broadcastEvent('tool_completed', {
       agentId,
       tool: data.tool_name || data.tool,
       timestamp: new Date().toISOString(),
       success: !data.error
-    });
+    }, `agent:${agentId}`);
   } catch (error) {
     logger.error(`Error handling post tool use: ${error}`);
   }
@@ -444,10 +558,10 @@ async function handleConversationStart(
     });
     
     // Broadcast real-time update
-    wsService.broadcast('agent_started', {
+    wsService.broadcastEvent('agent_started', {
       agentId,
       timestamp: new Date().toISOString()
-    });
+    }, `agent:${agentId}`);
   } catch (error) {
     logger.error(`Error handling conversation start: ${error}`);
   }
@@ -468,10 +582,10 @@ async function handleConversationEnd(
     });
     
     // Broadcast real-time update
-    wsService.broadcast('agent_stopped', {
+    wsService.broadcastEvent('agent_stopped', {
       agentId,
       timestamp: new Date().toISOString()
-    });
+    }, `agent:${agentId}`);
   } catch (error) {
     logger.error(`Error handling conversation end: ${error}`);
   }
@@ -492,11 +606,11 @@ async function handleStop(
     });
     
     // Broadcast real-time update
-    wsService.broadcast('agent_stopped', {
+    wsService.broadcastEvent('agent_stopped', {
       agentId,
       timestamp: new Date().toISOString(),
       reason: data.reason || 'manual_stop'
-    });
+    }, `agent:${agentId}`);
   } catch (error) {
     logger.error(`Error handling stop: ${error}`);
   }
@@ -517,12 +631,12 @@ async function handleNotification(
     
     // Broadcast real-time update for important notifications
     if (data.level === 'error' || data.level === 'warn') {
-      wsService.broadcast('agent_notification', {
+      wsService.broadcastEvent('agent_notification', {
         agentId,
         level: data.level,
         message: data.message,
         timestamp: new Date().toISOString()
-      });
+      }, `agent:${agentId}`);
     }
   } catch (error) {
     logger.error(`Error handling notification: ${error}`);

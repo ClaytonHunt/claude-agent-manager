@@ -13,6 +13,35 @@ interface AgentCardProps {
 export function AgentCard({ agent, onClick, className }: AgentCardProps) {
   const statusColor = getStatusColor(agent.status);
   
+  // Generate a descriptive name for the agent
+  const getAgentDisplayName = (agent: Agent): string => {
+    // Check if agent has task description in context
+    const taskDescription = agent.context?.taskDescription;
+    const specialist = agent.context?.specialist;
+    
+    if (taskDescription) {
+      // For specialist subagents, use a more readable format
+      if (specialist && agent.tags.includes('specialist-subagent')) {
+        const specialistType = specialist.replace('-specialist', '').replace('-', ' ');
+        return `${specialistType.charAt(0).toUpperCase() + specialistType.slice(1)} Specialist`;
+      }
+      // For other task agents, use the description (truncated)
+      return taskDescription.length > 30 
+        ? `${taskDescription.substring(0, 30)}...`
+        : taskDescription;
+    }
+    
+    // Check if it's a main project agent
+    if (agent.id === 'claude-agent-manager' || !agent.id.includes('-')) {
+      return 'Main Agent';
+    }
+    
+    // Fallback to agent ID
+    return `Agent ${agent.id.slice(-8)}`;
+  };
+  
+  const displayName = getAgentDisplayName(agent);
+  
   return (
     <Card 
       className={cn(
@@ -28,11 +57,11 @@ export function AgentCard({ agent, onClick, className }: AgentCardProps) {
           <div className="flex items-center space-x-2 min-w-0 flex-1">
             <StatusIndicator status={agent.status} size="md" />
             <div className="min-w-0 flex-1">
-              <h3 className="font-medium text-gray-900 truncate">
-                Agent {agent.id.slice(-8)}
+              <h3 className="font-medium text-gray-900 truncate" title={agent.context?.taskDescription || displayName}>
+                {displayName}
               </h3>
-              <p className="text-sm text-gray-500 truncate">
-                {agent.projectPath}
+              <p className="text-sm text-gray-500 truncate" title={agent.id}>
+                {agent.id.length > 20 ? `ID: ${agent.id.slice(-8)}` : agent.id}
               </p>
             </div>
           </div>
