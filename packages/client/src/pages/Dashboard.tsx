@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AgentCard } from '@/components/agent';
 import { MissionControlDashboard } from '@/components/mission-control';
@@ -6,7 +6,7 @@ import { Card, CardHeader, CardContent, LoadingState } from '@/components/common
 import { useAgentStore, useUiStore } from '@/stores';
 import { useWebSocket, useAgentUpdates } from '@/hooks';
 import { PROJECT_PATH } from '@/utils/constants';
-import { BarChart3, TrendingUp, Users, AlertTriangle } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, AlertTriangle, Copy, Check } from 'lucide-react';
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -23,6 +23,24 @@ export function Dashboard() {
   
   const { addNotification } = useUiStore();
   const { state: wsState, on, off, subscribe } = useWebSocket({ autoConnect: true });
+  
+  // Local state for copy functionality
+  const [copiedError, setCopiedError] = useState(false);
+
+  // Copy error to clipboard
+  const handleCopyError = async (errorText: string) => {
+    try {
+      await navigator.clipboard.writeText(errorText);
+      setCopiedError(true);
+      
+      // Reset copied state after 2 seconds
+      setTimeout(() => {
+        setCopiedError(false);
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy error to clipboard:', err);
+    }
+  };
 
   // Real-time agent updates
   useEffect(() => {
@@ -311,16 +329,29 @@ export function Dashboard() {
       {wsState.error && (
         <Card className="border-error-200 bg-error-50">
           <CardContent className="p-4">
-            <div className="flex items-center">
-              <AlertTriangle className="w-5 h-5 text-error-600 mr-2" />
-              <div>
-                <p className="text-sm font-medium text-error-800">
-                  WebSocket Connection Error
-                </p>
-                <p className="text-sm text-error-600 mt-1">
-                  {wsState.error}
-                </p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <AlertTriangle className="w-5 h-5 text-error-600 mr-2" />
+                <div>
+                  <p className="text-sm font-medium text-error-800">
+                    WebSocket Connection Error
+                  </p>
+                  <p className="text-sm text-error-600 mt-1">
+                    {wsState.error}
+                  </p>
+                </div>
               </div>
+              <button
+                onClick={() => handleCopyError(`WebSocket Connection Error: ${wsState.error}`)}
+                className="ml-4 p-2 hover:bg-error-100 rounded transition-colors"
+                title="Copy error to clipboard"
+              >
+                {copiedError ? (
+                  <Check className="w-4 h-4 text-green-600" />
+                ) : (
+                  <Copy className="w-4 h-4 text-error-600" />
+                )}
+              </button>
             </div>
           </CardContent>
         </Card>

@@ -60,7 +60,7 @@ export function AgentCard({ agent, onClick, className }: AgentCardProps) {
     }
     
     // Try to create a meaningful name from project path
-    if (agent.projectPath && agent.projectPath !== '/' && agent.projectPath !== process.cwd()) {
+    if (agent.projectPath && agent.projectPath !== '/' && agent.projectPath !== '/default/project') {
       const projectName = agent.projectPath.split('/').pop() || 'Unknown Project';
       return `${projectName} Agent`;
     }

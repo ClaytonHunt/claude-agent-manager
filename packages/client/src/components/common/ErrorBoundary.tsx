@@ -1,5 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Copy, Check } from 'lucide-react';
 import { Button, Card, CardContent } from './';
 import { isDev } from '@/utils/constants';
 
@@ -12,16 +12,17 @@ interface State {
   hasError: boolean;
   error?: Error;
   errorInfo?: ErrorInfo;
+  copied: boolean;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, copied: false };
   }
 
   public static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+    return { hasError: true, error, copied: false };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -30,11 +31,37 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   private handleReset = () => {
-    this.setState({ hasError: false, error: undefined, errorInfo: undefined });
+    this.setState({ hasError: false, error: undefined, errorInfo: undefined, copied: false });
   };
 
   private handleReload = () => {
     window.location.reload();
+  };
+
+  private handleCopyError = async () => {
+    if (!this.state.error) return;
+
+    const errorText = [
+      `Error: ${this.state.error.toString()}`,
+      '',
+      'Component Stack:',
+      this.state.errorInfo?.componentStack || 'N/A',
+      '',
+      'Stack Trace:',
+      this.state.error.stack || 'N/A'
+    ].join('\n');
+
+    try {
+      await navigator.clipboard.writeText(errorText);
+      this.setState({ copied: true });
+      
+      // Reset copied state after 2 seconds
+      setTimeout(() => {
+        this.setState({ copied: false });
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy error to clipboard:', err);
+    }
   };
 
   public render() {
@@ -61,8 +88,19 @@ export class ErrorBoundary extends Component<Props, State> {
 
               {isDev && this.state.error && (
                 <details className="text-left mb-6 p-4 bg-gray-100 rounded-md">
-                  <summary className="cursor-pointer text-sm font-medium text-gray-700 mb-2">
+                  <summary className="cursor-pointer text-sm font-medium text-gray-700 mb-2 flex items-center justify-between">
                     Error Details
+                    <button
+                      onClick={this.handleCopyError}
+                      className="ml-2 p-1 hover:bg-gray-200 rounded transition-colors"
+                      title="Copy error to clipboard"
+                    >
+                      {this.state.copied ? (
+                        <Check className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <Copy className="w-4 h-4 text-gray-600" />
+                      )}
+                    </button>
                   </summary>
                   <pre className="text-xs text-gray-600 whitespace-pre-wrap overflow-auto">
                     {this.state.error.toString()}

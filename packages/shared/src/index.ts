@@ -1,5 +1,6 @@
 export * from './types';
 export * from './utils';
+export * from './analytics';
 
 // Version info
 export const VERSION = '0.1.0';
