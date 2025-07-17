@@ -28,6 +28,30 @@ export function Dashboard() {
       }
     };
 
+    const handleAgentCreated = (message: any) => {
+      if (message.type === 'agent_created' && message.data) {
+        // Refresh agents list to include new agent
+        fetchAgents();
+        addNotification({
+          type: 'success',
+          title: 'New Agent Created',
+          message: `Agent ${message.data.id.slice(-8)} created`,
+        });
+      }
+    };
+
+    const handleAgentDeleted = (message: any) => {
+      if (message.type === 'agent_deleted' && message.data) {
+        // Refresh agents list to remove deleted agent
+        fetchAgents();
+        addNotification({
+          type: 'info',
+          title: 'Agent Deleted',
+          message: `Agent ${message.data.agentId.slice(-8)} removed`,
+        });
+      }
+    };
+
     const handleLogEntry = (message: any) => {
       if (message.type === 'log_entry' && message.data) {
         const { agentId, logEntry } = message.data;
@@ -45,35 +69,46 @@ export function Dashboard() {
     };
 
     on('agent_update', handleAgentUpdate);
+    on('agent_created', handleAgentCreated);
+    on('agent_deleted', handleAgentDeleted);
     on('log_entry', handleLogEntry);
 
     return () => {
       off('agent_update', handleAgentUpdate);
+      off('agent_created', handleAgentCreated);
+      off('agent_deleted', handleAgentDeleted);
       off('log_entry', handleLogEntry);
     };
-  }, [updateAgent, addLogToAgent, addNotification, on, off]);
+  }, [updateAgent, addLogToAgent, addNotification, fetchAgents, on, off]);
 
   // Fetch agents on mount
   useEffect(() => {
     fetchAgents();
   }, [fetchAgents]);
 
-  // Subscribe to agent channels for real-time updates
+  // Subscribe to project channels for real-time updates
   useEffect(() => {
-    if (agents.length > 0) {
-      // Subscribe to individual agent channels
-      const agentChannels = agents.map(agent => `agent:${agent.id}`);
-      
-      // Subscribe to project channels for broader coverage
-      const projectPaths = [...new Set(agents.map(a => a.projectPath))];
-      const projectChannels = projectPaths.map(path => `project:${path}`);
-      
-      // Subscribe to all relevant channels
-      const allChannels = [...agentChannels, ...projectChannels];
-      subscribe(allChannels);
-      
-      console.log('Dashboard subscribed to channels:', allChannels);
+    // Get unique project paths from current agents
+    const projectPaths = [...new Set(agents.map(a => a.projectPath))];
+    
+    // If no agents yet, subscribe to current project path
+    if (projectPaths.length === 0) {
+      // Try to get current project path from environment or default
+      const currentProjectPath = process.env.REACT_APP_PROJECT_PATH || window.location.pathname;
+      projectPaths.push(currentProjectPath);
     }
+    
+    // Subscribe to project channels for broader coverage
+    const projectChannels = projectPaths.map(path => `project:${path}`);
+    
+    // Also subscribe to individual agent channels for existing agents
+    const agentChannels = agents.map(agent => `agent:${agent.id}`);
+    
+    // Subscribe to all relevant channels
+    const allChannels = [...projectChannels, ...agentChannels];
+    subscribe(allChannels);
+    
+    console.log('Dashboard subscribed to channels:', allChannels);
   }, [agents, subscribe]);
 
   const filteredAgents = getFilteredAgents();
@@ -121,22 +156,6 @@ export function Dashboard() {
           </p>
         </div>
         
-        <div className="flex items-center space-x-2">
-          <div
-            className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-              wsState.isConnected
-                ? 'bg-success-100 text-success-800'
-                : 'bg-error-100 text-error-800'
-            }`}
-          >
-            <div
-              className={`w-2 h-2 rounded-full mr-2 ${
-                wsState.isConnected ? 'bg-success-500' : 'bg-error-500'
-              }`}
-            />
-            {wsState.isConnected ? 'Real-time Connected' : 'Disconnected'}
-          </div>
-        </div>
       </div>
 
       {/* Stats Cards */}

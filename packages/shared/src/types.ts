@@ -42,7 +42,7 @@ export interface HandoffContext {
 }
 
 export interface WebSocketMessage {
-  type: 'agent_update' | 'log_entry' | 'handoff' | 'ping' | 'pong' | 'tool_started' | 'tool_completed' | 'agent_started' | 'agent_stopped' | 'agent_notification';
+  type: 'agent_update' | 'log_entry' | 'handoff' | 'ping' | 'pong' | 'tool_started' | 'tool_completed' | 'agent_started' | 'agent_stopped' | 'agent_notification' | 'agent_created' | 'agent_deleted';
   data: any;
   timestamp: Date;
 }
