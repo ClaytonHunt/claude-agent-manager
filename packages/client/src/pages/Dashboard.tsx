@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AgentCard } from '@/components/agent';
 import { Card, CardHeader, CardContent, LoadingState } from '@/components/common';
 import { useAgentStore, useUiStore } from '@/stores';
@@ -7,6 +8,7 @@ import { PROJECT_PATH } from '@/utils/constants';
 import { BarChart3, TrendingUp, Users, AlertTriangle } from 'lucide-react';
 
 export function Dashboard() {
+  const navigate = useNavigate();
   const {
     agents,
     loading,
@@ -205,8 +207,10 @@ export function Dashboard() {
     const isRecentFiveMin = lastActivity > fiveMinutesAgo;
     const isRecentThirtyMin = lastActivity > thirtyMinutesAgo;
     
-    // Debug logging (always log for now to diagnose)
-    console.log(`Agent ${agent.id.slice(-8)}: lastActivity=${lastActivity.toISOString()}, fiveMinutesAgo=${fiveMinutesAgo.toISOString()}, isRecent5min=${isRecentFiveMin}, isRecent30min=${isRecentThirtyMin}`);
+    // Debug logging (for development)
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Agent ${agent.id.slice(-8)}: lastActivity=${lastActivity.toISOString()}, fiveMinutesAgo=${fiveMinutesAgo.toISOString()}, isRecent5min=${isRecentFiveMin}, isRecent30min=${isRecentThirtyMin}`);
+    }
     
     return isRecentFiveMin;
   });
@@ -221,8 +225,10 @@ export function Dashboard() {
         return lastActivity > thirtyMinutesAgo;
       });
   
-  // Additional debug logging
-  console.log(`Total agents: ${agents.length}, Filtered agents: ${filteredAgents.length}, Recently active (5min): ${recentlyActiveAgents.length}, Display agents: ${displayAgents.length}`);
+  // Additional debug logging (for development)
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`Total agents: ${agents.length}, Filtered agents: ${filteredAgents.length}, Recently active (5min): ${recentlyActiveAgents.length}, Display agents: ${displayAgents.length}`);
+  }
   
   const stats = getAgentStats();
 
@@ -326,10 +332,7 @@ export function Dashboard() {
                 <AgentCard
                   key={agent.id}
                   agent={agent}
-                  onClick={() => {
-                    // TODO: Navigate to agent details
-                    console.log('Navigate to agent:', agent.id);
-                  }}
+                  onClick={() => navigate(`/agents/${agent.id}`)}
                 />
               ))}
             </div>
