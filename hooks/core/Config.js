@@ -82,9 +82,12 @@ class Config {
     const config = {};
 
     // Server configuration (support both CLAUDE_ and CAM_ prefixes)
-    if (env.CLAUDE_MANAGER_URL || env.CAM_SERVER_URL) {
-      config.server = { url: env.CAM_SERVER_URL || env.CLAUDE_MANAGER_URL };
+    // Support new hierarchical environment variables
+    const serverUrl = this.getServerUrlFromEnv(env);
+    if (serverUrl) {
+      config.server = { url: serverUrl };
     }
+    
     if (env.CLAUDE_HOOKS_TIMEOUT) {
       config.server = { ...config.server, timeout: parseInt(env.CLAUDE_HOOKS_TIMEOUT) };
     }
@@ -227,8 +230,78 @@ class Config {
     return this.config.agent.sessionId;
   }
 
-  getServerUrl() {
-    return this.config.server.url;
+  getServerUrlFromEnv(env) {
+    // Multi-layer discovery strategy for server URL
+    const candidates = [
+      // 1. Explicit URL override
+      env.CAM_SERVER_URL,
+      env.CLAUDE_MANAGER_URL,
+      env.SERVER_URL,
+      
+      // 2. Construct from SERVER_PORT
+      env.SERVER_PORT ? `http://localhost:${env.SERVER_PORT}` : null,
+      
+      // 3. Construct from PORT (legacy support)
+      env.PORT ? `http://localhost:${env.PORT}` : null
+    ];
+    
+    // Return first valid URL
+    return candidates.find(url => url && this.isValidUrl(url));
+  }
+
+  isValidUrl(urlString) {
+    try {
+      const url = new URL(urlString);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async getServerUrl() {
+    // Try service discovery first, then fall back to config
+    const discoveredUrl = await this.discoverServerUrl();
+    return discoveredUrl || this.config.server.url;
+  }
+
+  async discoverServerUrl() {
+    const candidates = [
+      this.config.server.url,
+      'http://localhost:3001', // default fallback
+      'http://localhost:3000', // alternative port
+    ];
+    
+    for (const url of candidates) {
+      if (await this.validateServerHealth(url)) {
+        return url;
+      }
+    }
+    return null;
+  }
+
+  async validateServerHealth(url) {
+    const http = require('http');
+    const https = require('https');
+    
+    return new Promise((resolve) => {
+      const client = url.startsWith('https:') ? https : http;
+      const timeout = 5000;
+      
+      const req = client.get(`${url}/health`, { timeout }, (res) => {
+        resolve(res.statusCode === 200);
+      });
+      
+      req.on('error', () => resolve(false));
+      req.on('timeout', () => {
+        req.destroy();
+        resolve(false);
+      });
+      
+      req.setTimeout(timeout, () => {
+        req.destroy();
+        resolve(false);
+      });
+    });
   }
 
   getAgentId() {

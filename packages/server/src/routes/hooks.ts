@@ -657,7 +657,24 @@ async function handleStop(
   wsService: WebSocketService
 ): Promise<void> {
   try {
-    await agentService.updateAgentStatus(agentId, 'complete');
+    // Ensure agent exists - register if not found
+    try {
+      await agentService.updateAgentStatus(agentId, 'complete');
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('not found')) {
+        // Auto-register agent if it doesn't exist
+        await agentService.registerAgent({
+          id: agentId,
+          projectPath: data.projectPath || data.workingDirectory || process.cwd(),
+          context: data.context || {},
+          tags: ['claude-code']
+        });
+        await agentService.updateAgentStatus(agentId, 'complete');
+      } else {
+        throw error;
+      }
+    }
+    
     await agentService.addLogEntry(agentId, {
       level: 'info',
       message: 'Agent stopped',

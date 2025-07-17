@@ -12,8 +12,21 @@ export default defineConfig({
   source: {
     define: {
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
-      'process.env.REACT_APP_API_URL': JSON.stringify(process.env.REACT_APP_API_URL || 'http://localhost:3001'),
-      'process.env.REACT_APP_WS_URL': JSON.stringify(process.env.REACT_APP_WS_URL || 'ws://localhost:3001'),
+      'process.env.REACT_APP_API_URL': JSON.stringify(
+        process.env.REACT_APP_API_URL || 
+        process.env.SERVER_URL || 
+        `http://localhost:${process.env.SERVER_PORT || 3001}`
+      ),
+      'process.env.REACT_APP_WS_URL': JSON.stringify(
+        process.env.REACT_APP_WS_URL || 
+        process.env.WS_URL || 
+        `ws://localhost:${process.env.WS_PORT || process.env.SERVER_PORT || 3001}`
+      ),
+      'process.env.REACT_APP_PROJECT_PATH': JSON.stringify(
+        process.env.REACT_APP_PROJECT_PATH || 
+        process.env.CAM_PROJECT_PATH || 
+        '/default/project'
+      ),
     },
     entry: {
       index: './src/index.tsx',
@@ -39,11 +52,11 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
-    host: 'localhost',
+    port: parseInt(process.env.CLIENT_PORT || '3000', 10),
+    host: process.env.CLIENT_HOST || 'localhost',
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: process.env.SERVER_URL || `http://localhost:${process.env.SERVER_PORT || 3001}`,
         changeOrigin: true,
         ws: true, // Enable WebSocket proxying
       },
