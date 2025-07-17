@@ -194,9 +194,35 @@ export function Dashboard() {
   
   // Filter to show only agents active in the last 5 minutes
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-  const recentlyActiveAgents = filteredAgents.filter(agent => 
-    agent.lastActivity > fiveMinutesAgo
-  );
+  const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+  
+  const recentlyActiveAgents = filteredAgents.filter(agent => {
+    // Ensure lastActivity is a Date object
+    const lastActivity = agent.lastActivity instanceof Date 
+      ? agent.lastActivity 
+      : new Date(agent.lastActivity);
+    
+    const isRecentFiveMin = lastActivity > fiveMinutesAgo;
+    const isRecentThirtyMin = lastActivity > thirtyMinutesAgo;
+    
+    // Debug logging (always log for now to diagnose)
+    console.log(`Agent ${agent.id.slice(-8)}: lastActivity=${lastActivity.toISOString()}, fiveMinutesAgo=${fiveMinutesAgo.toISOString()}, isRecent5min=${isRecentFiveMin}, isRecent30min=${isRecentThirtyMin}`);
+    
+    return isRecentFiveMin;
+  });
+  
+  // Fallback: if no agents in 5 minutes, show agents from last 30 minutes
+  const displayAgents = recentlyActiveAgents.length > 0 
+    ? recentlyActiveAgents 
+    : filteredAgents.filter(agent => {
+        const lastActivity = agent.lastActivity instanceof Date 
+          ? agent.lastActivity 
+          : new Date(agent.lastActivity);
+        return lastActivity > thirtyMinutesAgo;
+      });
+  
+  // Additional debug logging
+  console.log(`Total agents: ${agents.length}, Filtered agents: ${filteredAgents.length}, Recently active (5min): ${recentlyActiveAgents.length}, Display agents: ${displayAgents.length}`);
   
   const stats = getAgentStats();
 
@@ -277,12 +303,12 @@ export function Dashboard() {
             Recently Active Agents
           </h2>
           <div className="text-sm text-gray-500">
-            Showing {recentlyActiveAgents.length} agents active in last 5 minutes
+            Showing {displayAgents.length} agents {recentlyActiveAgents.length > 0 ? 'active in last 5 minutes' : 'active in last 30 minutes'}
           </div>
         </div>
 
         <LoadingState loading={loading} error={error}>
-          {recentlyActiveAgents.length === 0 ? (
+          {displayAgents.length === 0 ? (
             <Card>
               <CardContent className="p-12 text-center">
                 <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -290,13 +316,13 @@ export function Dashboard() {
                   No recently active agents
                 </h3>
                 <p className="text-gray-600">
-                  No agents have been active in the last 5 minutes.
+                  No agents have been active in the last 30 minutes.
                 </p>
               </CardContent>
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {recentlyActiveAgents.map((agent) => (
+              {displayAgents.map((agent) => (
                 <AgentCard
                   key={agent.id}
                   agent={agent}
