@@ -3,6 +3,7 @@ import { AgentCard } from '@/components/agent';
 import { Card, CardHeader, CardContent, LoadingState } from '@/components/common';
 import { useAgentStore, useUiStore } from '@/stores';
 import { useWebSocket, useAgentUpdates } from '@/hooks';
+import { PROJECT_PATH } from '@/utils/constants';
 import { BarChart3, TrendingUp, Users, AlertTriangle } from 'lucide-react';
 
 export function Dashboard() {
@@ -68,16 +69,94 @@ export function Dashboard() {
       }
     };
 
+    const handleAgentError = (message: any) => {
+      if (message.type === 'agent_error' && message.data) {
+        const { agentId, error, timestamp } = message.data;
+        
+        // Add error log to agent
+        addLogToAgent(agentId, {
+          id: `error_${Date.now()}`,
+          timestamp: new Date(timestamp),
+          level: 'error',
+          message: error,
+          metadata: { source: 'agent_error_event' }
+        });
+        
+        // Show prominent error notification
+        addNotification({
+          type: 'error',
+          title: 'Agent Error',
+          message: `Agent ${agentId.slice(-8)} encountered an error: ${error}`,
+        });
+        
+        // Update agent status to error if needed
+        updateAgent({ 
+          id: agentId, 
+          status: 'error', 
+          lastActivity: new Date(timestamp) 
+        });
+      }
+    };
+
+    const handleHandoff = (message: any) => {
+      if (message.type === 'handoff' && message.data) {
+        const { fromAgentId, toAgentId, context, timestamp } = message.data;
+        
+        // Add handoff logs to both agents
+        const handoffMessage = `Handoff: ${fromAgentId.slice(-8)} → ${toAgentId.slice(-8)}`;
+        const handoffTimestamp = new Date(timestamp);
+        
+        addLogToAgent(fromAgentId, {
+          id: `handoff_from_${Date.now()}`,
+          timestamp: handoffTimestamp,
+          level: 'info',
+          message: `Handed off to agent ${toAgentId.slice(-8)}`,
+          metadata: { source: 'handoff_event', toAgentId, context }
+        });
+        
+        addLogToAgent(toAgentId, {
+          id: `handoff_to_${Date.now()}`,
+          timestamp: handoffTimestamp,
+          level: 'info',
+          message: `Received handoff from agent ${fromAgentId.slice(-8)}`,
+          metadata: { source: 'handoff_event', fromAgentId, context }
+        });
+        
+        // Show handoff notification
+        addNotification({
+          type: 'info',
+          title: 'Agent Handoff',
+          message: handoffMessage,
+        });
+        
+        // Update agent statuses
+        updateAgent({ 
+          id: fromAgentId, 
+          status: 'handoff', 
+          lastActivity: handoffTimestamp 
+        });
+        updateAgent({ 
+          id: toAgentId, 
+          status: 'active', 
+          lastActivity: handoffTimestamp 
+        });
+      }
+    };
+
     on('agent_update', handleAgentUpdate);
     on('agent_created', handleAgentCreated);
     on('agent_deleted', handleAgentDeleted);
     on('log_entry', handleLogEntry);
+    on('agent_error', handleAgentError);
+    on('handoff', handleHandoff);
 
     return () => {
       off('agent_update', handleAgentUpdate);
       off('agent_created', handleAgentCreated);
       off('agent_deleted', handleAgentDeleted);
       off('log_entry', handleLogEntry);
+      off('agent_error', handleAgentError);
+      off('handoff', handleHandoff);
     };
   }, [updateAgent, addLogToAgent, addNotification, fetchAgents, on, off]);
 
@@ -93,8 +172,8 @@ export function Dashboard() {
     
     // If no agents yet, subscribe to current project path
     if (projectPaths.length === 0) {
-      // Try to get current project path from environment or default
-      const currentProjectPath = process.env.REACT_APP_PROJECT_PATH || window.location.pathname;
+      // Use configured project path or fallback to current pathname
+      const currentProjectPath = PROJECT_PATH !== '/default/project' ? PROJECT_PATH : window.location.pathname;
       projectPaths.push(currentProjectPath);
     }
     
@@ -112,6 +191,13 @@ export function Dashboard() {
   }, [agents, subscribe]);
 
   const filteredAgents = getFilteredAgents();
+  
+  // Filter to show only agents active in the last 5 minutes
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+  const recentlyActiveAgents = filteredAgents.filter(agent => 
+    agent.lastActivity > fiveMinutesAgo
+  );
+  
   const stats = getAgentStats();
 
   const statCards = [
@@ -188,29 +274,29 @@ export function Dashboard() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">
-            Recent Agents
+            Recently Active Agents
           </h2>
           <div className="text-sm text-gray-500">
-            Showing {filteredAgents.length} of {agents.length} agents
+            Showing {recentlyActiveAgents.length} agents active in last 5 minutes
           </div>
         </div>
 
         <LoadingState loading={loading} error={error}>
-          {filteredAgents.length === 0 ? (
+          {recentlyActiveAgents.length === 0 ? (
             <Card>
               <CardContent className="p-12 text-center">
                 <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No agents found
+                  No recently active agents
                 </h3>
                 <p className="text-gray-600">
-                  No agents are currently running or match your filters.
+                  No agents have been active in the last 5 minutes.
                 </p>
               </CardContent>
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredAgents.slice(0, 12).map((agent) => (
+              {recentlyActiveAgents.map((agent) => (
                 <AgentCard
                   key={agent.id}
                   agent={agent}

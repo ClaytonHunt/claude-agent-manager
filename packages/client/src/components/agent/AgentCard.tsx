@@ -18,6 +18,7 @@ export function AgentCard({ agent, onClick, className }: AgentCardProps) {
     // Check if agent has task description in context
     const taskDescription = agent.context?.taskDescription;
     const specialist = agent.context?.specialist;
+    const toolName = agent.context?.toolName;
     
     if (taskDescription) {
       // For specialist subagents, use a more readable format
@@ -31,13 +32,42 @@ export function AgentCard({ agent, onClick, className }: AgentCardProps) {
         : taskDescription;
     }
     
-    // Check if it's a main project agent
-    if (agent.id === 'claude-agent-manager' || !agent.id.includes('-')) {
+    // Check agent tags for context
+    if (agent.tags.includes('main-agent')) {
+      return 'Main Session Agent';
+    }
+    
+    if (agent.tags.includes('conversation-agent')) {
+      return 'Interactive Session';
+    }
+    
+    if (agent.tags.includes('specialist-subagent')) {
+      if (specialist) {
+        const specialistType = specialist.replace('-specialist', '').replace('-', ' ');
+        return `${specialistType.charAt(0).toUpperCase() + specialistType.slice(1)} Specialist`;
+      }
+      return 'Specialist Agent';
+    }
+    
+    // Check tool context for Task agents
+    if (toolName === 'Task' || agent.context?.createdFrom === 'Task tool call') {
+      return 'Task Agent';
+    }
+    
+    // Check if it's a main project agent (fallback for known patterns)
+    if (agent.id === 'claude-agent-manager' || (!agent.id.includes('-') && agent.id.length < 16)) {
       return 'Main Agent';
     }
     
-    // Fallback to agent ID
-    return `Agent ${agent.id.slice(-8)}`;
+    // Try to create a meaningful name from project path
+    if (agent.projectPath && agent.projectPath !== '/' && agent.projectPath !== process.cwd()) {
+      const projectName = agent.projectPath.split('/').pop() || 'Unknown Project';
+      return `${projectName} Agent`;
+    }
+    
+    // Fallback to agent ID with better formatting
+    const shortId = agent.id.slice(-8);
+    return `Agent ${shortId}`;
   };
   
   const displayName = getAgentDisplayName(agent);
