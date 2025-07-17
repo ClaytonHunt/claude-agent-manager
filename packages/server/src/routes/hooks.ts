@@ -215,11 +215,29 @@ async function handleAgentStarted(
     } catch (error) {
       if (error instanceof Error && error.message.includes('not found')) {
         // Auto-register agent if it doesn't exist
+        // Extract meaningful information for better naming
+        let agentContext = data.context || {};
+        let agentTags = ['claude-code'];
+        
+        // Try to extract task information from various sources
+        const taskInfo = data.task || data.description || data.prompt || data.instructions;
+        if (taskInfo) {
+          agentContext.taskDescription = taskInfo.length > 100 
+            ? `${taskInfo.substring(0, 100)}...` 
+            : taskInfo;
+        }
+        
+        // Check if this is a main session agent
+        if (data.sessionType === 'main' || data.isMainAgent) {
+          agentContext.taskDescription = agentContext.taskDescription || 'Main Session Agent';
+          agentTags.push('main-agent');
+        }
+        
         await agentService.registerAgent({
           id: agentId,
           projectPath: data.projectPath || data.workingDirectory || process.cwd(),
-          context: data.context || {},
-          tags: ['claude-code']
+          context: agentContext,
+          tags: agentTags
         });
         await agentService.updateAgentStatus(agentId, 'active');
       } else {
@@ -232,6 +250,12 @@ async function handleAgentStarted(
       message: 'Agent started',
       metadata: data
     });
+    
+    // Broadcast real-time update
+    wsService.broadcastEvent('agent_started', {
+      agentId,
+      timestamp: new Date().toISOString()
+    }, `agent:${agentId}`);
   } catch (error) {
     logger.error(`Error handling agent started: ${error}`);
   }
@@ -267,6 +291,13 @@ async function handleAgentStopped(
       message: 'Agent stopped',
       metadata: data
     });
+    
+    // Broadcast real-time update
+    wsService.broadcastEvent('agent_stopped', {
+      agentId,
+      timestamp: new Date().toISOString(),
+      reason: data.reason || 'agent_stopped'
+    }, `agent:${agentId}`);
   } catch (error) {
     logger.error(`Error handling agent stopped: ${error}`);
   }
@@ -302,6 +333,13 @@ async function handleAgentErrored(
       message: `Agent error: ${data.error || 'Unknown error'}`,
       metadata: data
     });
+    
+    // Broadcast real-time update
+    wsService.broadcastEvent('agent_error', {
+      agentId,
+      timestamp: new Date().toISOString(),
+      error: data.error || 'Unknown error'
+    }, `agent:${agentId}`);
   } catch (error) {
     logger.error(`Error handling agent error: ${error}`);
   }
@@ -548,11 +586,28 @@ async function handleConversationStart(
   wsService: WebSocketService
 ): Promise<void> {
   try {
+    // Extract meaningful information for better naming
+    let agentContext = data.context || {};
+    let agentTags = data.tags || ['claude-code'];
+    
+    // Try to extract conversation topic or initial user message
+    const conversationInfo = data.initialMessage || data.userMessage || data.topic || data.conversationTitle;
+    if (conversationInfo) {
+      agentContext.taskDescription = conversationInfo.length > 80 
+        ? `${conversationInfo.substring(0, 80)}...` 
+        : conversationInfo;
+    } else {
+      agentContext.taskDescription = 'Interactive Session';
+    }
+    
+    // Add conversation-specific tags
+    agentTags.push('conversation-agent');
+    
     await agentService.registerAgent({
       id: agentId,
-      projectPath: data.projectPath || 'unknown',
-      context: data.context || {},
-      tags: data.tags || []
+      projectPath: data.projectPath || process.cwd(),
+      context: agentContext,
+      tags: agentTags
     });
     
     await agentService.addLogEntry(agentId, {
