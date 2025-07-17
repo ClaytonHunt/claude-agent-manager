@@ -190,6 +190,10 @@ async function handleClaudeCodeHook(
         await handleNotification(agentId, data, agentService, wsService);
         break;
         
+      case 'subagent_stop':
+        await handleSubagentStop(agentId, data, agentService, wsService);
+        break;
+        
       default:
         logger.warn(`Unknown Claude Code hook type: ${type}`);
     }
@@ -613,6 +617,32 @@ async function handleStop(
     }, `agent:${agentId}`);
   } catch (error) {
     logger.error(`Error handling stop: ${error}`);
+  }
+}
+
+async function handleSubagentStop(
+  agentId: string,
+  data: any,
+  agentService: AgentService,
+  wsService: WebSocketService
+): Promise<void> {
+  try {
+    await agentService.updateAgentStatus(agentId, 'complete');
+    await agentService.addLogEntry(agentId, {
+      level: 'info',
+      message: 'Subagent stopped',
+      metadata: { ...data, phase: 'subagent_stop' }
+    });
+    
+    // Broadcast real-time update
+    wsService.broadcastEvent('agent_stopped', {
+      agentId,
+      timestamp: new Date().toISOString(),
+      reason: data.reason || 'subagent_completion',
+      isSubagent: true
+    }, `agent:${agentId}`);
+  } catch (error) {
+    logger.error(`Error handling subagent stop: ${error}`);
   }
 }
 

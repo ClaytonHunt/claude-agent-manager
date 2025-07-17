@@ -87,9 +87,9 @@ export class AgentService {
 
     await this.storage.saveAgent(agent);
     
-    // Broadcast agent registration
+    // Broadcast agent creation
     if (this.wsService) {
-      this.wsService.broadcastAgentUpdate(agent);
+      this.wsService.broadcastAgentCreated(agent);
     }
     
     logger.info(`Agent registered: ${agent.id} for project: ${agent.projectPath}`);
@@ -195,6 +195,11 @@ export class AgentService {
   async deleteAgent(id: string): Promise<void> {
     const agent = await this.getAgent(id);
     await this.storage.deleteAgent(id);
+    
+    // Broadcast agent deletion
+    if (this.wsService) {
+      this.wsService.broadcastAgentDeleted(id, agent.projectPath);
+    }
     
     logger.info(`Agent deleted: ${id}`);
   }

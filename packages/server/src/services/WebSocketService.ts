@@ -214,6 +214,34 @@ export class WebSocketService {
     }, `agent:${toAgentId}`);
   }
 
+  broadcastAgentCreated(agent: Agent): void {
+    this.broadcast({
+      type: 'agent_created',
+      data: agent,
+      timestamp: new Date()
+    }, `agent:${agent.id}`);
+    
+    this.broadcast({
+      type: 'agent_created',
+      data: agent,
+      timestamp: new Date()
+    }, `project:${agent.projectPath}`);
+  }
+
+  broadcastAgentDeleted(agentId: string, projectPath: string): void {
+    this.broadcast({
+      type: 'agent_deleted',
+      data: { agentId, projectPath },
+      timestamp: new Date()
+    }, `agent:${agentId}`);
+    
+    this.broadcast({
+      type: 'agent_deleted',
+      data: { agentId, projectPath },
+      timestamp: new Date()
+    }, `project:${projectPath}`);
+  }
+
   private generateClientId(): string {
     return `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
