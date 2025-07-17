@@ -20,6 +20,12 @@ export interface AnalyticsMetrics {
     commonWorkflows: string[];
     efficiencyTrends: TrendData[];
   };
+  tools: {
+    mostUsedTools: { name: string; count: number; avgDuration: number }[];
+    toolUsageDistribution: { [toolName: string]: number };
+    totalToolUsage: number;
+    recentToolActivity: { name: string; lastUsed: Date; count: number }[];
+  };
 }
 
 export interface TrendData {

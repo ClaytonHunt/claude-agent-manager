@@ -22,6 +22,9 @@ export class AnalyticsService {
   private patternCache: Map<string, { data: Pattern[]; timestamp: number }> = new Map();
   private readonly cacheTimeout = 30000; // 30 seconds
 
+  // Tool usage tracking
+  private toolUsageStats: Map<string, { count: number; lastUsed: Date; avgDuration: number }> = new Map();
+
   constructor() {
     // Initialize analytics service
   }
@@ -147,6 +150,9 @@ export class AnalyticsService {
     // Generate trend data
     const efficiencyTrends = this.generateTrendData(agents);
 
+    // Generate tool usage metrics
+    const toolMetrics = this.generateToolMetrics();
+
     const metrics = {
       performance: {
         averageResponseTime,
@@ -164,7 +170,8 @@ export class AnalyticsService {
         peakHours: this.identifyPeakHours(agents),
         commonWorkflows: this.identifyCommonWorkflows(agents),
         efficiencyTrends
-      }
+      },
+      tools: toolMetrics
     };
 
     // Cache the result
@@ -256,6 +263,29 @@ export class AnalyticsService {
   }
 
   /**
+   * Track tool usage for analytics
+   */
+  trackToolUsage(toolName: string, duration?: number): void {
+    const current = this.toolUsageStats.get(toolName) || { count: 0, lastUsed: new Date(), avgDuration: 0 };
+    
+    current.count++;
+    current.lastUsed = new Date();
+    
+    if (duration !== undefined) {
+      current.avgDuration = (current.avgDuration * (current.count - 1) + duration) / current.count;
+    }
+    
+    this.toolUsageStats.set(toolName, current);
+  }
+
+  /**
+   * Get tool usage statistics
+   */
+  getToolUsageStats(): Map<string, { count: number; lastUsed: Date; avgDuration: number }> {
+    return new Map(this.toolUsageStats);
+  }
+
+  /**
    * Set external service for circuit breaker testing
    */
   setExternalService(service: Function): void {
@@ -307,6 +337,12 @@ export class AnalyticsService {
         peakHours: [],
         commonWorkflows: [],
         efficiencyTrends: []
+      },
+      tools: {
+        mostUsedTools: [],
+        toolUsageDistribution: {},
+        totalToolUsage: 0,
+        recentToolActivity: []
       }
     };
   }
@@ -421,6 +457,50 @@ export class AnalyticsService {
     // Generate a stable cache key based on agent data
     const agentHashes = agents.map(a => `${a.id}-${a.status}-${a.lastActivity}`).sort();
     return `${agentHashes.length}-${agentHashes.slice(0, 5).join('-')}`;
+  }
+
+  private generateToolMetrics(): {
+    mostUsedTools: { name: string; count: number; avgDuration: number }[];
+    toolUsageDistribution: { [toolName: string]: number };
+    totalToolUsage: number;
+    recentToolActivity: { name: string; lastUsed: Date; count: number }[];
+  } {
+    const toolStats = Array.from(this.toolUsageStats.entries());
+    const totalUsage = toolStats.reduce((sum, [, stats]) => sum + stats.count, 0);
+
+    // Most used tools (top 10)
+    const mostUsedTools = toolStats
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 10)
+      .map(([name, stats]) => ({
+        name,
+        count: stats.count,
+        avgDuration: stats.avgDuration
+      }));
+
+    // Tool usage distribution
+    const toolUsageDistribution: { [toolName: string]: number } = {};
+    toolStats.forEach(([name, stats]) => {
+      toolUsageDistribution[name] = stats.count;
+    });
+
+    // Recent tool activity (last 24 hours)
+    const recentToolActivity = toolStats
+      .filter(([, stats]) => Date.now() - stats.lastUsed.getTime() < 24 * 60 * 60 * 1000)
+      .sort((a, b) => b[1].lastUsed.getTime() - a[1].lastUsed.getTime())
+      .slice(0, 20)
+      .map(([name, stats]) => ({
+        name,
+        lastUsed: stats.lastUsed,
+        count: stats.count
+      }));
+
+    return {
+      mostUsedTools,
+      toolUsageDistribution,
+      totalToolUsage: totalUsage,
+      recentToolActivity
+    };
   }
 }
 
