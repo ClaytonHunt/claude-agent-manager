@@ -1,362 +1,171 @@
-# Work Analysis: Mission Control Intelligence Platform Implementation
-
-## Overview
-**Objective**: Transform Claude Agent Manager from basic monitoring to comprehensive development intelligence platform
-**Source**: Mission Control PRD (`.claude/prd.md`)
-**Complexity**: High - Requires analytics engine, ML pipeline, and real-time intelligence features
-**Estimated Effort**: 16 weeks with 8 specialist domains
+# Work Analysis: Fix "Starting tool: unknown" Issue
 
 ## Requirements Summary
+Address the fundamental issue where all tools are showing as "Starting tool: unknown" in the Claude Agent Manager analytics, making it impossible to understand what agents are actually doing and severely limiting the analytics capabilities.
 
-### Core Transformation Goals
-1. **Fix Critical UX Issue**: Remove broken Quick Actions and replace with functional Mission Control interface
-2. **Implement Intelligence Platform**: Add analytics engine with pattern recognition and predictive insights
-3. **Enable Workflow Integration**: Terminal shortcuts, context sharing, and productivity tools
-4. **Build Team Collaboration**: Multi-user support with shared visibility and coordination
-5. **Achieve Performance Targets**: <100ms API response, 10K+ concurrent agents, 50K events/second
+## Problem Statement
+The analytics system consistently shows "Starting tool: unknown" instead of the actual tool names (Edit, Read, Bash, etc.), which:
+- Prevents meaningful analysis of agent tool usage
+- Makes logs uninformative for debugging
+- Undermines the core analytics and monitoring features
+- Creates poor user experience for understanding agent activities
 
-### User Personas
-- **Primary**: Solo developers seeking workflow optimization and productivity insights
-- **Secondary**: Team leads requiring team oversight and workflow standardization
-- **Tertiary**: DevOps engineers wanting automation and integration capabilities
-
-## Async Specialist Analysis Summary
+## Async Specialist Analysis (Consolidated)
 
 ### 🏗️ Architecture Specialist Findings
+**Root Cause**: Data extraction and mapping issue in hook processing pipeline
+- Hook data structure uses `payload.tool_name`, but extraction logic looks for `data.tool_name`
+- Current code: `const toolName = data.toolName || data.tool_name || data.tool || 'unknown'`
+- Should access: `data.payload?.tool_name` as primary source
 
-**System Design Approach**: Microservices evolution with analytics-first architecture
-- **Current Foundation**: Strong React + Express + Redis architecture with real-time WebSocket
-- **Required Evolution**: Add time-series database (InfluxDB), analytics database (ClickHouse), ML pipeline
-- **Scalability Strategy**: Kubernetes deployment with horizontal scaling to 10K+ concurrent agents
-
-**Integration Points**:
-- **Event Streaming**: Kafka/Kinesis for high-throughput analytics ingestion
-- **Database Layer**: Multi-database strategy (Redis + InfluxDB + ClickHouse + Neo4j)
-- **ML Pipeline**: MLflow for pattern recognition and predictive analytics
-- **API Gateway**: GraphQL federation for complex queries
-
-**Technical Dependencies**:
-- **Analytics Engine**: Apache Spark for real-time processing
-- **Time-Series Storage**: InfluxDB for metrics (1ms resolution)
-- **OLAP Engine**: ClickHouse for interactive analytics
-- **Container Orchestration**: Kubernetes with Helm charts
-
-**Risk Assessment**: 
-- **High**: Database performance under load, ML model accuracy
-- **Medium**: Integration complexity, cost escalation
-- **Mitigation**: Phased rollout, comprehensive testing, performance monitoring
-
-### 🎨 Frontend Specialist Findings
-
-**UI/UX Approach**: Mission Control paradigm with intelligence-first design
-- **Component Architecture**: Atomic design with virtualized lists and memoization
-- **Real-time Updates**: Enhanced WebSocket integration with optimistic updates
-- **Responsive Strategy**: Mobile-first grid layout with progressive disclosure
-- **Performance Optimization**: Virtual scrolling, lazy loading, bundle splitting
-
-**User Experience Flow**:
-- **Dashboard Evolution**: Transform from broken Quick Actions to comprehensive intelligence hub
-- **Progressive Intelligence**: Layer insights from basic metrics to advanced recommendations
-- **Workflow Integration**: Seamless terminal integration and context sharing
-- **Accessibility**: WCAG 2.1 AA compliance with keyboard navigation
-
-**Component Hierarchy**:
+**Data Flow Issue**:
 ```
-MissionControlDashboard/
-├── CommandCenter/        # System overview and alerts
-├── IntelligenceHub/      # AI insights and recommendations  
-├── WorkflowOrchestrator/ # Workflow management and automation
-├── PerformanceMetrics/   # Real-time analytics visualization
-└── CollaborationSpace/   # Team coordination and sharing
-```
-
-### 🗄️ Backend Specialist Findings
-
-**API Design**: GraphQL + REST hybrid with comprehensive analytics endpoints
-- **Analytics Pipeline**: Real-time event ingestion with stream processing
-- **Data Architecture**: Multi-database strategy with time-series optimization
-- **Integration Strategy**: Terminal session management and export/import functionality
-- **Performance Optimization**: Multi-level caching, query optimization, connection pooling
-
-**Data Model Extensions**:
-```typescript
-// Enhanced Agent with Analytics
-interface Agent {
-  // Existing fields...
-  metrics: AgentMetrics;
-  patterns: Pattern[];
-  insights: Insight[];
-  teamId?: string;
-  performance: PerformanceMetrics;
-  collaborations: Collaboration[];
-}
-
-// New Analytics Types
-interface Metric {
-  type: 'performance' | 'usage' | 'quality';
-  value: number;
-  timestamp: Date;
-  agentId: string;
-  metadata: Record<string, any>;
-}
-
-interface Pattern {
-  type: 'behavioral' | 'performance' | 'collaboration';
-  confidence: number;
-  actionable: boolean;
-  description: string;
-  recommendations: string[];
-}
+Claude Code → Hook System → Agent Manager → Analytics
+     ↓              ↓              ↓              ↓
+  Tool Call    preToolUse.js   handlePreToolUse   "Starting tool: unknown"
 ```
 
 ### 🧪 Quality Assurance Specialist Findings
+**Testing Gaps**:
+- No integration tests for hook-to-server communication
+- No validation tests for tool name extraction
+- Hook test suite has failures (79 failed, 40 passed)
+- Missing schema validation for hook events
 
-**Testing Strategy**: Comprehensive multi-layer testing approach
-- **Unit Testing**: 80%+ coverage with Jest and React Testing Library
-- **Integration Testing**: WebSocket, API, and database integration tests
-- **E2E Testing**: Playwright for complete user workflows
-- **Performance Testing**: Load testing for 10K+ concurrent agents
-
-**Quality Gates**:
-- **Pre-commit**: ESLint, Prettier, type checking, unit tests
-- **CI/CD Pipeline**: All tests, security scan, performance benchmarks
-- **Deployment**: Blue-green deployment with automated rollback
-
-**Test Automation Framework**:
-```typescript
-// Performance Test Example
-test('Mission Control Performance', async ({ page }) => {
-  await createTestAgents(page, 100);
-  
-  const startTime = Date.now();
-  await page.goto('/mission-control');
-  await page.waitForLoadState('networkidle');
-  const loadTime = Date.now() - startTime;
-  
-  expect(loadTime).toBeLessThan(2000);
-});
-```
-
-### 🔒 Security Specialist Findings
-
-**Threat Assessment**: Multi-layered security approach for Mission Control features
-- **Authentication**: JWT with role-based access control (RBAC)
-- **Data Protection**: End-to-end encryption for context sharing
-- **Input Validation**: Comprehensive validation for all analytics endpoints
-- **Audit Logging**: Complete audit trail for sensitive operations
-
-**Security Implementation**:
-- **Terminal Integration**: Sandboxed command execution with input sanitization
-- **API Security**: Rate limiting, input validation, security headers
-- **Data Privacy**: GDPR-compliant analytics with data anonymization
-- **Compliance**: SOC 2 Type II preparation with security controls
-
-### 📊 Performance Specialist Findings
-
-**Performance Requirements**: Sub-100ms API response, <2s dashboard load, 10K+ concurrent agents
-- **Bottleneck Analysis**: WebSocket broadcasting, database queries, React rendering
-- **Optimization Strategy**: Event batching, query optimization, virtual scrolling
-- **Monitoring Implementation**: Real-time performance tracking with alerting
-
-**Scalability Planning**:
-- **Horizontal Scaling**: Kubernetes with auto-scaling
-- **Database Optimization**: Sharding, indexing, materialized views
-- **Caching Strategy**: Multi-tier caching (L1: Memory, L2: Redis, L3: CDN)
-- **Load Testing**: 50K events/second processing validation
-
-### 🔧 DevOps Specialist Findings
-
-**Deployment Strategy**: Kubernetes-native with blue-green deployment
-- **Infrastructure**: Container orchestration with Helm charts
-- **CI/CD Pipeline**: GitHub Actions with automated quality gates
-- **Monitoring**: Prometheus + Grafana + ELK stack
-- **Disaster Recovery**: Automated backup and recovery procedures
-
-**Infrastructure Requirements**:
-```yaml
-# Resource Requirements
-analytics_engine:
-  cpu: 8 cores
-  memory: 32GB
-  instances: 3
-
-time_series_db:
-  storage: 500GB
-  retention: 90 days
-  
-ml_pipeline:
-  cpu: 16 cores (with GPU)
-  memory: 64GB
-```
+**Data Format Issues**:
+- Hook events structure: `{ payload: { tool_name: "Edit" } }`
+- Server expects: `{ toolName: "Edit" }` or `{ tool_name: "Edit" }`
+- Mismatch between expected and actual data structure
 
 ### 👨‍💻 Code Review Specialist Findings
+**Implementation Location**: `/packages/server/src/routes/hooks.ts`
+- `handlePreToolUse` function (lines 487-555)
+- Tool extraction logic at line 535
+- Similar issues in `handleToolCalled`, `handleToolCompleted`, `handlePostToolUse`
 
-**Code Quality Standards**: TypeScript strict mode with comprehensive linting
-- **Component Architecture**: Atomic design with proper memoization
-- **Testing Standards**: 80% coverage with comprehensive test suites
-- **Documentation**: TSDoc for all public APIs
-- **Performance Patterns**: Optimization guidelines and best practices
+**Immediate Fix Required**:
+```typescript
+// Current (incorrect)
+const toolName = data.toolName || data.tool_name || data.tool || 'unknown';
 
-**Review Process**:
-- **Automated Checks**: ESLint, Prettier, type checking, security scan
-- **Manual Review**: Architecture review, performance analysis, accessibility check
-- **Quality Gates**: All checks pass before merge approval
+// Fixed (correct)
+const toolName = data.payload?.tool_name || data.toolName || data.tool_name || data.tool || 'unknown';
+```
 
-## Implementation Plan
+## Implementation Plan with Specialist Recommendations
 
-### Phase 1: Foundation & UX Fix (Weeks 1-4)
+### Phase 1: Immediate Fix (High Priority)
+1. **Fix Data Extraction Logic**
+   - Update tool name extraction in `handlePreToolUse`
+   - Apply same fix to `handleToolCalled`, `handleToolCompleted`, `handlePostToolUse`
+   - Add proper error handling and logging
 
-**Objective**: Remove broken Quick Actions and implement Mission Control foundation
-**Duration**: 4 weeks
-**Key Deliverables**:
-- [ ] Remove broken Quick Actions from AgentDetailPage
-- [ ] Implement Mission Control grid layout
-- [ ] Add time-series database (InfluxDB)
-- [ ] Create basic analytics service
-- [ ] Build real-time metrics dashboard
+2. **Add Debug Logging**
+   - Log actual hook data structure for debugging
+   - Add visibility into what data is being received
+   - Include structured logging for tool extraction failures
 
-**TDD Approach**:
-1. **RED**: Write failing tests for Mission Control components
-2. **GREEN**: Implement minimal Mission Control dashboard
-3. **REFACTOR**: Optimize layout and performance
+### Phase 2: Robust Implementation (Medium Priority)
+3. **Create Centralized Tool Extraction Utility**
+   - Extract tool parsing logic into reusable function
+   - Handle multiple data formats and edge cases
+   - Add comprehensive error handling
 
-### Phase 2: Intelligence Engine (Weeks 5-8)
+4. **Implement Schema Validation**
+   - Add TypeScript types for hook event structures
+   - Validate incoming hook data against expected schema
+   - Add runtime validation for critical fields
 
-**Objective**: Implement analytics engine with pattern recognition
-**Duration**: 4 weeks  
-**Key Deliverables**:
-- [ ] Deploy analytics processing pipeline
-- [ ] Implement pattern recognition algorithms
-- [ ] Create insights generation system
-- [ ] Add intelligence panel to dashboard
-- [ ] Build recommendation engine
+### Phase 3: Enhanced Analytics (Low Priority)
+5. **Update Analytics Processing**
+   - Ensure analytics system properly processes tool usage data
+   - Add tool usage metrics and patterns to analytics
+   - Create tool usage dashboards and insights
 
-**TDD Approach**:
-1. **RED**: Write failing tests for analytics processing
-2. **GREEN**: Implement analytics engine with basic ML
-3. **REFACTOR**: Optimize pattern recognition accuracy
-
-### Phase 3: Workflow Integration (Weeks 9-12)
-
-**Objective**: Add workflow automation and team collaboration
-**Duration**: 4 weeks
-**Key Deliverables**:
-- [ ] Implement terminal integration APIs
-- [ ] Add context sharing and export features
-- [ ] Build team collaboration infrastructure
-- [ ] Create workflow orchestration system
-- [ ] Add predictive analytics capabilities
-
-**TDD Approach**:
-1. **RED**: Write failing tests for workflow integration
-2. **GREEN**: Implement workflow automation features
-3. **REFACTOR**: Optimize team collaboration performance
-
-### Phase 4: Production Deployment (Weeks 13-16)
-
-**Objective**: Production deployment with full scalability
-**Duration**: 4 weeks
-**Key Deliverables**:
-- [ ] Deploy Kubernetes infrastructure
-- [ ] Implement monitoring and alerting
-- [ ] Complete performance optimization
-- [ ] Add enterprise security features
-- [ ] Conduct final validation and launch
-
-**TDD Approach**:
-1. **RED**: Write failing tests for production scenarios
-2. **GREEN**: Implement production-ready features
-3. **REFACTOR**: Optimize for scale and reliability
+6. **Add Integration Tests**
+   - Test hook-to-server communication end-to-end
+   - Validate tool name extraction across all event types
+   - Add performance tests for hook processing
 
 ## File Locations and Dependencies
 
-### Core Implementation Files
-- **Frontend**: `/packages/client/src/pages/MissionControlDashboard.tsx`
-- **Backend**: `/packages/server/src/services/AnalyticsService.ts`
-- **Analytics**: `/packages/analytics/src/` (new package)
-- **Types**: `/packages/shared/src/types/analytics.ts`
+### Primary Files to Modify:
+- `/packages/server/src/routes/hooks.ts` - Main hook processing logic
+- `/packages/server/src/services/AgentService.ts` - Agent log processing
+- `/packages/server/src/services/AnalyticsService.ts` - Analytics event processing
 
-### Configuration Files
-- **Kubernetes**: `/k8s/` (new directory)
-- **Docker**: `/Dockerfile.analytics` (new)
-- **Database**: `/migrations/` (new directory)
-- **CI/CD**: `.github/workflows/mission-control.yml`
-
-### Test Files
-- **Unit Tests**: `/packages/*/src/**/*.test.ts`
-- **Integration**: `/tests/integration/mission-control.test.ts`
-- **E2E**: `/tests/e2e/mission-control.spec.ts`
-- **Performance**: `/tests/performance/load.test.ts`
+### Secondary Files (if needed):
+- `/packages/shared/src/types/` - Type definitions for hook events
+- `/packages/server/src/utils/` - Tool extraction utility functions
+- `/packages/server/src/__tests__/` - Integration tests for hook processing
 
 ## Success Criteria and Validation Gates
 
-### Technical Validation
-- [ ] All tests passing (unit, integration, E2E) with 80%+ coverage
-- [ ] Performance benchmarks met (<100ms API, <2s load, 10K+ agents)
-- [ ] Security review completed with zero critical vulnerabilities
-- [ ] Code quality standards satisfied (TypeScript strict, ESLint passing)
+### Phase 1 Success Criteria:
+- [ ] Tool names display correctly in agent logs instead of "unknown"
+- [ ] All tool types (Edit, Read, Bash, Write, etc.) are properly recognized
+- [ ] Debug logging shows actual tool names being extracted
+- [ ] No regression in existing hook processing functionality
 
-### Business Validation  
-- [ ] User acceptance testing passed with 4.5+ satisfaction rating
-- [ ] All PRD acceptance criteria met
-- [ ] Stakeholder approval for production deployment
-- [ ] Performance monitoring validates scalability targets
+### Phase 2 Success Criteria:
+- [ ] Centralized tool extraction handles edge cases gracefully
+- [ ] Schema validation prevents malformed hook data issues
+- [ ] Error handling provides meaningful feedback for debugging
+- [ ] Performance impact is minimal (<5ms processing time)
 
-### Quality Gates
-- [ ] Code coverage >80% for new code
-- [ ] Performance testing validates 10K+ concurrent agents
-- [ ] Security testing passes with SOC 2 compliance
-- [ ] Accessibility testing achieves WCAG 2.1 AA compliance
-- [ ] Load testing validates 50K events/second processing
+### Phase 3 Success Criteria:
+- [ ] Analytics dashboard shows proper tool usage statistics
+- [ ] Integration tests cover all hook event types
+- [ ] Tool usage patterns are visible in analytics insights
+- [ ] System handles high-volume tool usage without performance degradation
 
-## Risk Assessment and Mitigation
+## Risk Assessment with Mitigation Strategies
 
-### High-Risk Areas
-1. **Analytics Engine Performance**: Complex queries on large datasets
-   - **Mitigation**: Incremental deployment, performance monitoring, query optimization
-2. **ML Model Accuracy**: Pattern recognition may have false positives
-   - **Mitigation**: Continuous training, human feedback loops, confidence thresholds
-3. **Database Scalability**: Multi-database consistency under load
-   - **Mitigation**: Comprehensive load testing, database sharding, circuit breakers
+### High-Risk Areas:
+1. **Data Structure Changes**: Hook event structure may vary between Claude Code versions
+   - **Mitigation**: Support multiple data formats with fallback logic
+   - **Timeline**: Critical for immediate fix
 
-### Medium-Risk Areas
-1. **Integration Complexity**: Multiple new services and dependencies
-   - **Mitigation**: Phased rollout, comprehensive testing, fallback mechanisms
-2. **User Adoption**: Mission Control paradigm may require learning curve
-   - **Mitigation**: Progressive disclosure, onboarding flow, user education
+2. **Performance Impact**: Adding data processing to hook handling
+   - **Mitigation**: Implement efficient extraction logic with caching
+   - **Timeline**: Monitor during implementation
 
-### Contingency Plans
-- **Analytics Engine Failure**: Fallback to basic monitoring with gradual re-enablement
-- **Performance Issues**: Horizontal scaling with load balancers
-- **Database Problems**: Automated failover and backup recovery
+3. **Breaking Changes**: Modifying hook processing may affect other features
+   - **Mitigation**: Comprehensive testing and backward compatibility
+   - **Timeline**: Test thoroughly before deployment
 
-## Automation and Workflow Integration
+### Medium-Risk Areas:
+1. **Analytics Integration**: Changes may affect existing analytics processing
+   - **Mitigation**: Gradual rollout with monitoring
+   - **Timeline**: Can be addressed in Phase 3
 
-### Git Workflow
-1. **Feature Branch**: Create from main with Mission Control prefix
-2. **TDD Implementation**: Follow RED-GREEN-REFACTOR cycles
-3. **Quality Gates**: Automated pre-commit and CI/CD validation
-4. **Code Review**: Specialist review with automated checks
-5. **Deployment**: Blue-green deployment with automated rollback
+2. **Testing Complexity**: Hook processing is complex to test
+   - **Mitigation**: Create realistic test scenarios and mock data
+   - **Timeline**: Essential for validation
 
-### CI/CD Pipeline
-```yaml
-# Mission Control Pipeline
-mission-control-pipeline:
-  - validate-code-quality
-  - run-comprehensive-tests
-  - build-and-containerize
-  - deploy-to-staging
-  - run-integration-tests
-  - deploy-to-production
-  - monitor-and-alert
-```
+## Handoff Instructions and Context Preservation
 
----
+### Development Context:
+- This issue affects core analytics functionality
+- Fix should be applied to all hook event handlers consistently
+- Tool recognition is critical for user understanding of agent activities
 
-**Generated**: 2025-07-17
-**Method**: Agentic Development Methodology with 8 Specialist Domains
-**Source**: Mission Control PRD with comprehensive specialist analysis
-**Next Steps**: Use `/execute-prp` to begin implementation with specialist guidance
+### Technical Context:
+- Hook system receives events from Claude Code via HTTP endpoints
+- Data flows through hook processing → agent logs → analytics
+- Multiple event types need consistent tool extraction logic
 
-This comprehensive work analysis provides a detailed roadmap for transforming Claude Agent Manager into a Mission Control intelligence platform, with expert insights from 8 specialist domains and a clear 16-week implementation plan.
+### Next Steps:
+1. **Start with Phase 1** - immediate fix for data extraction
+2. **Test thoroughly** - validate tool names appear correctly
+3. **Monitor analytics** - ensure proper tool usage tracking
+4. **Iterate based on results** - refine extraction logic as needed
+
+## Implementation Timeline
+- **Phase 1**: 1-2 days (immediate fix)
+- **Phase 2**: 3-5 days (robust implementation)
+- **Phase 3**: 1-2 weeks (enhanced analytics)
+
+**Total Estimated Time**: 2-3 weeks for complete solution
+
+This analysis provides a comprehensive approach to resolving the "Starting tool: unknown" issue while building a robust foundation for tool recognition and analytics in the Claude Agent Manager system.

@@ -352,9 +352,10 @@ async function handleToolCalled(
   wsService: WebSocketService
 ): Promise<void> {
   try {
+    const toolName = data.toolName || data.tool_name || data.tool || data.payload?.tool_name || data.payload?.tool || 'unknown';
     await agentService.addLogEntry(agentId, {
       level: 'info',
-      message: `Tool called: ${data.tool || 'unknown'}`,
+      message: `Tool called: ${toolName}`,
       metadata: data
     });
   } catch (error) {
@@ -369,9 +370,10 @@ async function handleToolCompleted(
   wsService: WebSocketService
 ): Promise<void> {
   try {
+    const toolName = data.toolName || data.tool_name || data.tool || data.payload?.tool_name || data.payload?.tool || 'unknown';
     await agentService.addLogEntry(agentId, {
       level: 'info',
-      message: `Tool completed: ${data.tool || 'unknown'}`,
+      message: `Tool completed: ${toolName}`,
       metadata: data
     });
   } catch (error) {
@@ -491,6 +493,13 @@ async function handlePreToolUse(
   wsService: WebSocketService
 ): Promise<void> {
   try {
+    // Debug logging to understand actual data structure
+    logger.info('Pre-tool-use hook data received:', {
+      agentId,
+      dataKeys: Object.keys(data),
+      data: JSON.stringify(data, null, 2)
+    });
+
     // Ensure agent exists - register if not found
     try {
       await agentService.updateAgentStatus(agentId, 'active');
@@ -498,8 +507,8 @@ async function handlePreToolUse(
       if (error instanceof Error && error.message.includes('not found')) {
         // Auto-register agent if it doesn't exist
         // For Task agents, use the description for better naming
-        const taskDescription = data.toolInput?.description || data.tool_input?.description;
-        const toolName = data.toolName || data.tool_name || data.tool;
+        const taskDescription = data.toolInput?.description || data.tool_input?.description || data.payload?.tool_input?.description;
+        const toolName = data.toolName || data.tool_name || data.tool || data.payload?.tool_name || data.payload?.tool;
         
         let agentTags = ['claude-code'];
         let agentContext = data.context || {};
@@ -529,8 +538,19 @@ async function handlePreToolUse(
     }
     
     // Create descriptive log message based on available data
-    const taskDescription = data.toolInput?.description || data.tool_input?.description;
-    const toolName = data.toolName || data.tool_name || data.tool || 'unknown';
+    const taskDescription = data.toolInput?.description || data.tool_input?.description || data.payload?.tool_input?.description;
+    const toolName = data.toolName || data.tool_name || data.tool || data.payload?.tool_name || data.payload?.tool || 'unknown';
+    
+    // Additional debug logging for tool name extraction
+    logger.info('Tool name extraction:', {
+      agentId,
+      toolName,
+      extractedFrom: data.toolName ? 'data.toolName' : 
+                     data.tool_name ? 'data.tool_name' : 
+                     data.tool ? 'data.tool' : 
+                     data.payload?.tool_name ? 'data.payload.tool_name' : 
+                     data.payload?.tool ? 'data.payload.tool' : 'unknown'
+    });
     
     let logMessage = `Starting tool: ${toolName}`;
     if (toolName === 'Task' && taskDescription) {
@@ -546,7 +566,7 @@ async function handlePreToolUse(
     // Broadcast real-time update
     wsService.broadcastEvent('tool_started', {
       agentId,
-      tool: data.tool_name || data.tool,
+      tool: toolName,
       timestamp: new Date().toISOString()
     }, `agent:${agentId}`);
   } catch (error) {
@@ -563,7 +583,7 @@ async function handlePostToolUse(
   try {
     await agentService.addLogEntry(agentId, {
       level: 'info',
-      message: `Completed tool: ${data.tool_name || data.tool || 'unknown'}`,
+      message: `Completed tool: ${data.toolName || data.tool_name || data.tool || data.payload?.tool_name || data.payload?.tool || 'unknown'}`,
       metadata: { ...data, phase: 'post_tool_use' }
     });
     
