@@ -118,3 +118,6 @@ export declare class NotFoundError extends AgentManagerError {
 export declare class ConflictError extends AgentManagerError {
     constructor(message: string);
 }
+
+// Export analytics types
+export * from './analytics';
