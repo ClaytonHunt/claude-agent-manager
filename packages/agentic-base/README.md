@@ -1,177 +1,465 @@
-# Agentic Base - Claude Code Starter Kit
+# Agentic-Base Starter Kit
 
-A language-agnostic starter kit for Claude Code projects featuring Context Engineering templates, proven command patterns, and project scaffolding.
+A language-agnostic starter kit implementing the **Agentic Development Methodology** - a systematic approach using async specialist subagents for accelerated development workflows with Claude Code.
 
-## What is Agentic Base?
+## 🚀 What is Agentic Development?
 
-Agentic Base is a collection of templates and configurations that help you quickly set up new projects optimized for working with Claude Code. It includes:
+The Agentic Development Methodology revolutionizes how you work with Claude Code by leveraging **async specialist subagents** for parallel analysis and implementation. Instead of sequential development, you launch multiple domain experts simultaneously to analyze, plan, and implement features with unprecedented speed and quality.
 
-- **Context Engineering Templates**: Documentation structure that provides Claude with comprehensive project context
-- **Claude Code Commands**: Proven slash command patterns for common workflows
-- **Project Templates**: Starter files for different project types
-- **Configuration Templates**: CLAUDE.md and project setup files
+### Key Benefits
 
-## Quick Start
+- **🔄 Parallel Analysis**: Multiple specialists analyze concurrently
+- **⚡ Accelerated Development**: Reduced iteration cycles through upfront analysis  
+- **🎯 Quality Assurance**: Built-in review and validation cycles
+- **📊 Knowledge Consolidation**: Expert findings merged systematically
+- **🔗 Real-time Integration**: Live updates via Claude Code hooks
+- **🌐 Environment Flexibility**: Dynamic port configuration and service discovery
 
-### 1. Copy to Your New Project
+## 📦 What's Included
+
+### Core Components
+
+- **🤖 Enhanced Hook System**: Real-time integration with dynamic service discovery
+- **⚙️ Environment Configuration**: Configurable ports and service URLs
+- **📋 Agentic Methodology**: Complete workflow templates and specialist protocols
+- **🔧 Setup Automation**: One-command project initialization
+- **📝 PRD Generation**: Interactive Product Requirements Document creation
+- **🎨 Context Engineering**: Comprehensive documentation templates
+
+### Specialist Subagent Roles
+
+- **🏗️ Architecture Specialist**: System design, patterns, scalability
+- **🧪 Quality Assurance Specialist**: Testing strategies, automation
+- **👨‍💻 Code Review Specialist**: Security, performance, quality
+- **🔧 DevOps Specialist**: CI/CD, deployment, infrastructure
+- **🎨 Frontend Specialist**: UI/UX, accessibility, components
+- **🗄️ Backend Specialist**: APIs, databases, server architecture
+- **🔒 Security Specialist**: Threat modeling, secure coding
+- **📊 Performance Specialist**: Optimization, monitoring, profiling
+
+## ⚡ Quick Start
+
+### 1. Copy Agentic-Base to Your Project
 
 ```bash
-# Copy the entire contents to your new project
-cp -r packages/agentic-base/* /path/to/your/new/project/
+# Copy entire agentic-base to your new project
+cp -r agentic-base/* /path/to/your/new/project/
+cd /path/to/your/new/project/
 
-# Or copy specific components you need
-cp -r packages/agentic-base/.claude /path/to/your/project/
-cp packages/agentic-base/CLAUDE.md /path/to/your/project/
+# Or clone and copy
+git clone https://github.com/your-repo/claude-agent-manager.git
+cp -r claude-agent-manager/packages/agentic-base/* /path/to/your/project/
 ```
 
-### 2. Customize for Your Project
-
-1. **Update CLAUDE.md**: Edit the project configuration template with your specific details
-2. **Set up Documentation**: Copy templates from `templates/docs/` to your project's documentation folder
-3. **Configure Commands**: Customize the Claude Code commands in `.claude/commands/` for your workflow
-4. **Add Project Files**: Use templates from `templates/` as starting points
-
-### 3. Initialize Context Engineering
-
-The starter kit includes templates for Context Engineering, a methodology that provides comprehensive context to AI coding assistants:
+### 2. One-Command Setup
 
 ```bash
-# Copy Context Engineering documentation structure
-cp -r templates/docs/context-engineering /path/to/your/project/docs/
+# Complete agentic environment setup
+npm run setup
 
-# Customize each template file for your project:
-# - planning.md: Project overview and links
-# - architecture.md: System architecture details  
-# - coding-standards.md: Language-specific conventions
+# With custom ports
+npm run setup -- --server-port 3002 --client-port 3001
+
+# Development environment
+npm run setup:dev
+
+# Production environment  
+npm run setup:prod
 ```
 
-## What's Included
+### 3. Start Development
 
-### Claude Code Commands (`.claude/commands/`)
+```bash
+# Check installation
+npm run hooks:status
+npm run hooks:test
 
-Pre-configured slash commands for common workflows:
+# Create your first Product Requirements Document
+npm run prd:create
 
-- **`/init-context-engineering`**: Set up Context Engineering structure
-- **`/generate-prp`**: Create comprehensive Product Requirements Prompts
-- **`/execute-prp`**: Execute implementation plans with validation
-- **`/feature-from-ado`**: Create features from Azure DevOps work items
-- **`/feature-from-description`**: Create features from text descriptions
-- **`/work`**: General work task management
-
-### Project Templates (`templates/`)
-
-- **`README-template.md`**: Comprehensive README template
-- **`docs/context-engineering/`**: Complete Context Engineering documentation structure
-  - `planning.md`: Project planning and overview
-  - `architecture.md`: System architecture documentation
-  - `coding-standards.md`: Coding standards and conventions
-
-### Configuration Templates
-
-- **`CLAUDE.md`**: Main project configuration for Claude Code
-- **Project-specific templates**: Ready to customize for your technology stack
-
-## Context Engineering Methodology
-
-Context Engineering is a systematic approach to providing AI coding assistants with comprehensive project context. The templates include:
-
-### Core Principles
-- **Context is King**: Provide all necessary documentation and examples
-- **Validation Loops**: Include executable tests and validation commands  
-- **Information Dense**: Use patterns and keywords from your codebase
-- **Progressive Success**: Start simple, validate, then enhance
-
-### Document Structure
-```
-docs/context-engineering/
-├── planning.md              # Project overview with technology stack
-├── architecture.md          # System design and component relationships
-├── coding-standards.md      # Language-specific conventions and patterns
-├── testing-strategy.md      # Testing frameworks and approaches
-├── deployment-process.md    # CI/CD and deployment procedures
-└── domain-knowledge.md      # Business logic and domain concepts
+# Start your development workflow
+npm run dev
 ```
 
-## Customization Guide
+## 🛠️ Setup Process
 
-### For Different Project Types
+The setup script automatically handles:
 
-**Node.js/React Projects**:
-- Update validation commands in CLAUDE.md to use npm/yarn
-- Customize coding-standards.md for JavaScript/TypeScript
-- Include package.json patterns and build tools
+### ✅ Hook Installation
+- Copies Claude Code hooks to `~/.claude/hooks`
+- Configures real-time integration
+- Sets up service discovery
+
+### ⚙️ Environment Configuration  
+- Creates `.env` from template
+- Configures dynamic ports
+- Sets up service URLs
+
+### 📦 Dependency Management
+- Installs npm dependencies
+- Validates installation
+- Checks compatibility
+
+### 🔍 Validation
+- Tests hook connectivity
+- Verifies environment setup
+- Validates service discovery
+
+## 📋 Environment Configuration
+
+All services support dynamic port configuration:
+
+```bash
+# Core Service Ports (configurable)
+SERVER_PORT=3001          # Your backend server
+CLIENT_PORT=3000          # Your frontend client  
+WS_PORT=3001             # WebSocket port
+
+# Service URLs (auto-generated)
+SERVER_URL=http://localhost:${SERVER_PORT}
+CLIENT_URL=http://localhost:${CLIENT_PORT}
+WS_URL=ws://localhost:${WS_PORT}
+
+# Claude Code Integration
+CAM_SERVER_URL=${SERVER_URL}    # Hook target
+CAM_AGENT_ID=your-project-name  # Agent identifier
+CAM_PROJECT_PATH=/path/to/project
+```
+
+### Service Discovery
+
+The hook system automatically discovers services:
+
+1. **Environment Variables**: Uses configured URLs
+2. **Port Scanning**: Falls back to common ports  
+3. **Health Checks**: Validates service availability
+4. **Circuit Breaker**: Handles service failures gracefully
+
+## 🤖 Agentic Methodology Workflows
+
+### Core Workflow: Async Specialist Protocol
+
+```javascript
+// Launch multiple specialists concurrently
+Task: Architecture specialist analysis
+Task: Quality assurance review
+Task: Security assessment  
+Task: Performance analysis
+
+// Consolidate findings
+// Implement with continuous validation
+// Create PR with specialist summary
+```
+
+### Mandatory Process Steps
+
+1. **📋 Planning Phase**
+   - Create `work-analysis.md` with requirements
+   - Launch async specialist subagents
+   - Consolidate expert findings
+   - Get developer approval
+
+2. **🔄 TDD Implementation**  
+   - RED: Write failing tests first
+   - GREEN: Minimal code to pass
+   - REFACTOR: Improve while tests pass
+
+3. **🌿 Automated Git Workflow**
+   - Create feature branch
+   - Continuous validation
+   - Auto-generate PR with analysis
+   - Mark work complete
+
+### TodoWrite Templates
+
+The methodology includes templates for different task types:
+
+```javascript
+// Feature Development Template
+TodoWrite([
+  {"id": "specialists-async", "content": "Launch async specialist subagents", "status": "pending", "priority": "high"},
+  {"id": "branch-create", "content": "Create feature branch", "status": "pending", "priority": "high"},
+  {"id": "tdd-red", "content": "RED: Write failing test", "status": "pending", "priority": "high"},
+  {"id": "tdd-green", "content": "GREEN: Implement code", "status": "pending", "priority": "high"},
+  {"id": "pr-create", "content": "Create PR with analysis", "status": "pending", "priority": "high"}
+])
+```
+
+## 📝 Product Requirements Document (PRD) Generation
+
+Interactive PRD creation for comprehensive project planning:
+
+```bash
+# Launch PRD creation wizard
+npm run prd:create
+```
+
+### PRD Scenarios
+
+1. **New Application**: Full product discovery interview
+2. **Existing Application**: Analyze codebase + feature gaps
+3. **Modify Existing PRD**: Update and refine requirements
+
+### PRD Features
+
+- **🎯 Product Discovery**: Comprehensive interview process
+- **🔍 Application Analysis**: Automated codebase examination
+- **📊 Gap Analysis**: Identify missing features
+- **📋 Structured Output**: Professional PRD format
+- **🔄 Iterative Refinement**: Easy updates and modifications
+
+## 🏗️ Project Structure
+
+After setup, your project will have:
+
+```
+your-project/
+├── .env                     # Environment configuration
+├── CLAUDE.md               # Agentic methodology configuration
+├── package.json            # Enhanced scripts for agentic workflow
+├── hooks/                  # Claude Code hooks (copied to ~/.claude/hooks)
+│   ├── core/              # Hook framework
+│   ├── preToolUse.js      # Pre-execution hooks
+│   ├── postToolUse.js     # Post-execution hooks
+│   └── ...                # Additional hook files
+├── scripts/               # Setup and utility scripts
+│   ├── setup-agentic-base.js  # Main setup script
+│   └── install-hooks.js   # Hook installation
+├── .claude/               # Claude Code configuration
+│   ├── commands/          # Custom slash commands
+│   ├── work-analysis.md   # Current work planning
+│   └── settings.json      # Claude Code settings
+└── templates/             # Documentation templates
+    └── docs/              # Context engineering templates
+```
+
+## 🎯 Available Commands
+
+### Setup & Environment
+```bash
+npm run setup              # Complete project setup
+npm run setup:dev          # Development environment
+npm run setup:prod         # Production environment  
+npm run env:configure      # Configure ports interactively
+```
+
+### Development Workflow
+```bash
+npm run dev                # Start development servers
+npm run build              # Build project
+npm run test:all           # Run all tests (10min timeout)
+npm run validate           # Run all validation checks
+```
+
+### Hook Management
+```bash
+npm run hooks:install      # Install/update hooks
+npm run hooks:status       # Check hook status
+npm run hooks:test         # Test hook connectivity
+```
+
+### Agentic Methodology
+```bash
+npm run prd:create         # Create Product Requirements Document
+npm run feature:status     # Check current feature status
+npm run feature:new        # Start new feature
+```
+
+### Quality Gates
+```bash
+npm run lint               # Run linting
+npm run typecheck          # Type checking
+npm run clean              # Clean build artifacts
+```
+
+## 📚 Usage Examples
+
+### Starting a New Feature
+
+```bash
+# 1. Create PRD for planning
+npm run prd:create
+
+# 2. Claude Code will automatically:
+#    - Launch async specialist subagents
+#    - Create work-analysis.md plan
+#    - Get your approval
+#    - Create feature branch
+#    - Implement with TDD cycles
+#    - Create PR with specialist analysis
+
+# 3. Review the PR and merge when ready
+```
+
+### Working with Specialists
+
+In Claude Code, launch multiple specialists:
+
+```
+Task: Architecture specialist - analyze system design for user authentication
+Task: Security specialist - review authentication security requirements  
+Task: Frontend specialist - design user authentication UI/UX
+Task: Backend specialist - design authentication API endpoints
+```
+
+Claude will run these concurrently and consolidate findings.
+
+### Environment Configuration
+
+```bash
+# Different port configuration
+npm run setup -- --server-port 8080 --client-port 3000
+
+# Skip certain setup steps
+npm run setup -- --skip-dependencies --skip-hooks
+
+# Production environment with custom ports
+npm run setup:prod -- --server-port 80 --client-port 443
+```
+
+## 🔧 Customization Guide
+
+### For Your Technology Stack
+
+**React/Node.js Projects**:
+```bash
+# Update package.json scripts
+"dev": "concurrently \"npm run server\" \"npm run client\"",
+"build": "npm run build:client && npm run build:server",
+"test:all": "npm run test:client && npm run test:server"
+```
 
 **Python Projects**:
-- Update validation commands for pytest, ruff, mypy
-- Customize coding-standards.md for Python conventions
-- Include requirements.txt and pyproject.toml patterns
+```bash
+# Update package.json scripts  
+"dev": "python manage.py runserver",
+"build": "python -m build",
+"test:all": "pytest --timeout=600"
+```
 
 **Other Languages**:
-- Adapt validation commands for your build tools
-- Update coding standards for your language conventions
-- Include language-specific configuration files
+- Adapt build/test commands in package.json
+- Update CLAUDE.md validation gates
+- Customize hook integration for your stack
 
-### Command Customization
+### Custom Specialist Roles
 
-Edit the commands in `.claude/commands/` to match your workflow:
+Add project-specific specialists by extending the methodology:
 
-1. **Update validation gates**: Change build/test commands for your stack
-2. **Modify templates**: Adjust document templates for your project structure
-3. **Add custom commands**: Create new commands for your specific workflows
+```javascript
+// In .claude/commands/ create new specialist commands
+Task: Database specialist - analyze data model design
+Task: ML specialist - review machine learning pipeline
+Task: Mobile specialist - assess mobile app architecture
+```
 
-## Usage Patterns
+## 🔍 Troubleshooting
 
-### Context Engineering Workflow
+### Common Issues
 
-1. **Initialize**: Copy templates and customize for your project
-2. **Plan**: Use `/generate-prp` to create comprehensive implementation plans
-3. **Execute**: Use `/execute-prp` to implement with continuous validation
-4. **Maintain**: Keep documentation updated as the project evolves
+**Hook Connection Failures**:
+```bash
+# Check server URL configuration
+npm run hooks:test
 
-### Integration with Claude Code
+# Verify environment variables
+cat .env | grep CAM_SERVER_URL
 
-The starter kit is designed to work seamlessly with Claude Code:
+# Reinstall hooks
+npm run hooks:install
+```
 
-- **CLAUDE.md** provides essential project context
-- **Slash commands** enable consistent workflows
-- **Documentation templates** give Claude comprehensive understanding
-- **Validation gates** ensure code quality throughout development
+**Port Conflicts**:
+```bash
+# Kill existing processes
+npm run kill-ports  # (if available in your package.json)
 
-## Best Practices
+# Use different ports
+npm run setup -- --server-port 3002 --client-port 3001
+```
 
-### Documentation Maintenance
-- Keep CLAUDE.md updated with project changes
-- Update Context Engineering docs as architecture evolves
-- Add new patterns to coding-standards.md as they emerge
+**Environment Issues**:
+```bash
+# Validate complete setup
+npm run validate
 
-### Command Usage
-- Use `/generate-prp` for complex features requiring planning
-- Use `/execute-prp` with validation gates for implementation
-- Customize commands as your workflow evolves
+# Check Node.js version (18+ required)
+node --version
 
-### Template Evolution
-- Start with provided templates and adapt to your needs
-- Add project-specific patterns and conventions
-- Share successful patterns back to the community
+# Recreate environment
+rm .env && npm run setup
+```
 
-## No Installation Required
+### Debug Procedures
 
-Agentic Base is not an npm package - it's simply a collection of templates and files to copy into your projects. This approach ensures:
+1. **Server Connection**: Check console for server startup messages
+2. **Hook Status**: Use `npm run hooks:status` for connectivity
+3. **Environment Validation**: Verify `.env` matches your setup
+4. **Service Discovery**: Check hook logs for service discovery attempts
 
-- **Language Agnostic**: Works with any programming language or framework
-- **No Dependencies**: No external dependencies to manage or maintain
-- **Full Customization**: Complete freedom to adapt templates to your needs
-- **Simple Distribution**: Easy to share and modify across teams
+## 🚀 Advanced Features
 
-## Contributing
+### Multi-Environment Support
 
-Found useful patterns or improvements? Consider contributing:
+```bash
+# Environment-specific setup
+npm run setup:dev     # Development with debug logging
+npm run setup:prod    # Production with optimizations
+```
 
-1. Test patterns with real projects
-2. Document successful adaptations
-3. Share templates for new project types
-4. Improve documentation clarity
+### Custom Port Discovery
 
-## License
+The system automatically handles:
+- Port conflicts with automatic assignment
+- Service health checking
+- Fallback URL discovery
+- Cross-platform networking
+
+### Hook Circuit Breaker
+
+Built-in resilience features:
+- Automatic retry with exponential backoff
+- Circuit breaker for failed services
+- Graceful degradation when server unavailable
+- Health check validation
+
+## 📖 Documentation
+
+### Context Engineering
+
+The starter kit includes comprehensive documentation templates:
+
+- `templates/docs/context-engineering/` - Complete documentation structure
+- `CLAUDE.md` - Main project configuration
+- Work planning templates and workflows
+
+### Methodology Documentation
+
+- **Specialist Protocols**: How to work with async subagents
+- **Workflow Integration**: TDD cycles with specialist validation
+- **Quality Gates**: Validation checkpoints throughout development
+
+## 🤝 Contributing
+
+Help improve the agentic methodology:
+
+1. **Test with Real Projects**: Validate workflows in production
+2. **Document Patterns**: Share successful specialist combinations  
+3. **Extend Capabilities**: Add new specialist types
+4. **Improve Documentation**: Clarify setup and usage
+
+## 📄 License
 
 MIT License - use freely in your projects.
+
+---
+
+## 🎯 Next Steps
+
+1. **Complete Setup**: Run `npm run setup` 
+2. **Create First PRD**: Use `npm run prd:create`
+3. **Launch Specialists**: Start with architecture and quality analysis
+4. **Implement with TDD**: Follow RED-GREEN-REFACTOR cycles
+5. **Review PR**: Claude will auto-generate PR with specialist findings
+
+**Welcome to accelerated development with the Agentic Methodology! 🚀**

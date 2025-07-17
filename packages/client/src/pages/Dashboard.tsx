@@ -1,5 +1,7 @@
 import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AgentCard } from '@/components/agent';
+import { MissionControlDashboard } from '@/components/mission-control';
 import { Card, CardHeader, CardContent, LoadingState } from '@/components/common';
 import { useAgentStore, useUiStore } from '@/stores';
 import { useWebSocket, useAgentUpdates } from '@/hooks';
@@ -7,6 +9,7 @@ import { PROJECT_PATH } from '@/utils/constants';
 import { BarChart3, TrendingUp, Users, AlertTriangle } from 'lucide-react';
 
 export function Dashboard() {
+  const navigate = useNavigate();
   const {
     agents,
     loading,
@@ -205,8 +208,10 @@ export function Dashboard() {
     const isRecentFiveMin = lastActivity > fiveMinutesAgo;
     const isRecentThirtyMin = lastActivity > thirtyMinutesAgo;
     
-    // Debug logging (always log for now to diagnose)
-    console.log(`Agent ${agent.id.slice(-8)}: lastActivity=${lastActivity.toISOString()}, fiveMinutesAgo=${fiveMinutesAgo.toISOString()}, isRecent5min=${isRecentFiveMin}, isRecent30min=${isRecentThirtyMin}`);
+    // Debug logging (for development)
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Agent ${agent.id.slice(-8)}: lastActivity=${lastActivity.toISOString()}, fiveMinutesAgo=${fiveMinutesAgo.toISOString()}, isRecent5min=${isRecentFiveMin}, isRecent30min=${isRecentThirtyMin}`);
+    }
     
     return isRecentFiveMin;
   });
@@ -221,8 +226,10 @@ export function Dashboard() {
         return lastActivity > thirtyMinutesAgo;
       });
   
-  // Additional debug logging
-  console.log(`Total agents: ${agents.length}, Filtered agents: ${filteredAgents.length}, Recently active (5min): ${recentlyActiveAgents.length}, Display agents: ${displayAgents.length}`);
+  // Additional debug logging (for development)
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`Total agents: ${agents.length}, Filtered agents: ${filteredAgents.length}, Recently active (5min): ${recentlyActiveAgents.length}, Display agents: ${displayAgents.length}`);
+  }
   
   const stats = getAgentStats();
 
@@ -259,48 +266,14 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">
-            Monitor your Claude Code agents in real-time
-          </p>
-        </div>
-        
-      </div>
+      {/* Mission Control Section */}
+      <MissionControlDashboard agents={displayAgents} />
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statCards.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={stat.title}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">
-                      {stat.title}
-                    </p>
-                    <p className="text-3xl font-bold text-gray-900">
-                      {stat.value}
-                    </p>
-                  </div>
-                  <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                    <Icon className={`w-6 h-6 ${stat.color}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Agents Grid */}
+      {/* Active Agents Section */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">
-            Recently Active Agents
+            Active Agents
           </h2>
           <div className="text-sm text-gray-500">
             Showing {displayAgents.length} agents {recentlyActiveAgents.length > 0 ? 'active in last 5 minutes' : 'active in last 30 minutes'}
@@ -326,10 +299,7 @@ export function Dashboard() {
                 <AgentCard
                   key={agent.id}
                   agent={agent}
-                  onClick={() => {
-                    // TODO: Navigate to agent details
-                    console.log('Navigate to agent:', agent.id);
-                  }}
+                  onClick={() => navigate(`/agents/${agent.id}`)}
                 />
               ))}
             </div>

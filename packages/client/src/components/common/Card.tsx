@@ -4,6 +4,7 @@ import { cn } from '@/utils';
 interface CardProps {
   children: React.ReactNode;
   className?: string;
+  onClick?: () => void;
 }
 
 interface CardHeaderProps {
@@ -21,9 +22,12 @@ interface CardFooterProps {
   className?: string;
 }
 
-export function Card({ children, className }: CardProps) {
+export function Card({ children, className, onClick }: CardProps) {
   return (
-    <div className={cn('bg-white rounded-lg border border-gray-200 shadow-sm', className)}>
+    <div 
+      className={cn('bg-white rounded-lg border border-gray-200 shadow-sm', className)}
+      onClick={onClick}
+    >
       {children}
     </div>
   );

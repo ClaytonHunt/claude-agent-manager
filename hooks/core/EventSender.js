@@ -22,15 +22,34 @@ class EventSender {
     };
   }
 
-  createHttpClient() {
+  createHttpClient(baseURL = null) {
     return axios.create({
-      baseURL: this.configObj.server.url,
+      baseURL: baseURL || this.configObj.server.url,
       timeout: this.configObj.server.timeout,
       headers: {
         'Content-Type': 'application/json',
         'User-Agent': 'Claude-Agent-Manager-Hooks/1.0.0'
       }
     });
+  }
+
+  async getClient() {
+    // Use dynamic service discovery if available
+    if (this.config.getServerUrl && typeof this.config.getServerUrl === 'function') {
+      try {
+        const serverUrl = await this.config.getServerUrl();
+        if (serverUrl && serverUrl !== this.configObj.server.url) {
+          // Create new client with discovered URL
+          return this.createHttpClient(serverUrl);
+        }
+      } catch (error) {
+        // Fall back to existing client if discovery fails
+        this.logger?.debug('Service discovery failed, using configured URL', { error: error.message });
+      }
+    }
+    
+    // Return existing client
+    return this.client;
   }
 
   async sendEvent(eventType, eventData) {
@@ -88,13 +107,14 @@ class EventSender {
     };
   }
 
-  async sendWithRetry(payload) {
+  async sendWithRetry(payload, endpoint = '/api/hooks/claude-code') {
     let lastError;
     const maxRetries = this.configObj.server.retries;
     
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        const response = await this.client.post('/api/hooks/claude-code', payload);
+        const client = await this.getClient();
+        const response = await client.post(endpoint, payload);
         return response;
       } catch (error) {
         lastError = error;
@@ -205,7 +225,8 @@ class EventSender {
 
   async testConnection() {
     try {
-      const response = await this.client.get('/api/hooks/health');
+      const client = await this.getClient();
+      const response = await client.get('/api/hooks/health');
       return response.status === 200;
     } catch (error) {
       return false;

@@ -1,36 +1,45 @@
 # Claude Agent Manager
 
-A comprehensive system for monitoring and managing Claude Code agents with real-time tracking, WebSocket communication, and a professional dashboard interface.
+A comprehensive system for monitoring and managing Claude Code agents with real-time tracking, WebSocket communication, and the **Agentic Development Methodology** - featuring async specialist subagents for accelerated development workflows.
 
 ## 🏗️ **Architecture**
 
 ```
 claude-agent-manager/
 ├── packages/
-│   ├── agentic-base/       # 🎯 Language-agnostic starter kit
+│   ├── agentic-base/       # 🎯 Enhanced starter kit with agentic methodology
 │   ├── client/            # 🖥️  React dashboard with real-time monitoring
 │   ├── server/            # 🛡️  Express backend with WebSocket support
 │   └── shared/            # 📦 Common TypeScript types
+├── hooks/                 # 🪝 Claude Code hooks with service discovery
+├── scripts/               # 🔧 Setup and utility scripts
 ├── .claude/               # 🤖 Context Engineering templates
-│   ├── hooks/             # 🪝 Claude Code hooks for monitoring
 │   └── settings.json      # ⚙️  Claude Code configuration
 └── docs/                  # 📚 Documentation and guides
 ```
 
 ## ✨ **Features**
 
-### **Real-time Agent Monitoring**
-- Live agent status updates via WebSocket
-- Professional dashboard with responsive design
-- Agent hierarchy visualization
-- Real-time log streaming with filtering
-- **Claude Code hooks integration** for comprehensive monitoring
+### **🤖 Agentic Development Methodology**
+- **Async Specialist Subagents**: Launch multiple domain experts concurrently
+- **Enhanced Agent Naming**: Descriptive names based on specialist roles
+- **Automated Branching & PR Workflow**: Git automation with specialist analysis
+- **Real-time Hook Integration**: Live updates via service discovery
+- **Environment Configuration**: Dynamic port management and failover
 
-### **Language-Agnostic Starter Kit**
-- **agentic-base**: Pure templates for any tech stack
-- Context Engineering documentation structure
-- Proven Claude Code command patterns
-- No dependencies - just copy and customize
+### **📊 Real-time Agent Monitoring**
+- Live agent status updates via WebSocket with auto-reconnection
+- Professional dashboard with responsive design
+- Agent hierarchy visualization with specialist identification
+- Real-time log streaming with filtering and notifications
+- **Enhanced Claude Code hooks** with circuit breaker and retry logic
+
+### **🎯 Language-Agnostic Starter Kit**
+- **agentic-base**: Complete methodology templates for any tech stack
+- **One-command setup**: Automated environment and hook installation
+- **PRD Generation**: Interactive Product Requirements Document creation
+- **Context Engineering**: Comprehensive documentation structure
+- **TDD Workflows**: RED-GREEN-REFACTOR cycle automation
 
 ### **Production-Ready Backend**
 - Express server with Redis/memory storage fallback
@@ -75,24 +84,30 @@ sudo systemctl start redis-server
 npm run dev
 ```
 
-### **Option 4: With Claude Code Hooks**
+### **Option 4: With Agentic Methodology (Recommended)**
 ```bash
-# Setup Claude Code hooks for comprehensive monitoring
-cd .claude/hooks
-./setup.sh
+# Setup complete agentic environment with hooks
+npm run hooks:install
 
-# Start the application
+# Configure environment (optional - custom ports)
+cp .env.example .env
+# Edit .env to customize SERVER_PORT, CLIENT_PORT, etc.
+
+# Start the application with dynamic configuration
 npm run dev
 
-# Now Claude Code will automatically send monitoring data to the dashboard
+# Now Claude Code will automatically send monitoring data with enhanced features
 ```
 
 ## 🌐 **Access URLs**
 
-- **Client Dashboard**: http://localhost:3000
-- **Server API**: http://localhost:3001
-- **WebSocket**: ws://localhost:3001/ws
+**Default Configuration** (configurable via .env):
+- **Client Dashboard**: http://localhost:3000 (CLIENT_PORT)
+- **Server API**: http://localhost:3001 (SERVER_PORT)
+- **WebSocket**: ws://localhost:3001 (WS_PORT)
 - **Health Check**: http://localhost:3001/health
+
+**Service Discovery**: Hooks automatically discover correct URLs via environment configuration
 
 ## 🎯 **Package Overview**
 

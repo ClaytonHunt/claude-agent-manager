@@ -7,6 +7,7 @@ export const isProd = process.env.NODE_ENV === 'production';
 // API configuration
 export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 export const WS_URL = process.env.REACT_APP_WS_URL || 'ws://localhost:3001';
+export const PROJECT_PATH = process.env.REACT_APP_PROJECT_PATH || '/default/project';
 
 // Default client configuration
 export const DEFAULT_CLIENT_CONFIG: ClientConfig = {

@@ -1,0 +1,46 @@
+{
+  "name": "your-project-name",
+  "version": "0.1.0",
+  "description": "Project built with agentic development methodology",
+  "private": true,
+  "scripts": {
+    "setup": "node scripts/setup-agentic-base.js",
+    "setup:dev": "node scripts/setup-agentic-base.js --environment development",
+    "setup:prod": "node scripts/setup-agentic-base.js --environment production",
+    "setup:hooks": "node scripts/install-hooks.js",
+    "env:configure": "node scripts/configure-ports.js",
+    "dev": "echo 'Configure your development command here'",
+    "build": "echo 'Configure your build command here'", 
+    "test": "echo 'Configure your test command here'",
+    "test:all": "npm run test",
+    "lint": "echo 'Configure your lint command here'",
+    "typecheck": "echo 'Configure your typecheck command here'",
+    "validate": "npm run test:all && npm run build && npm run lint && npm run typecheck",
+    "hooks:install": "node scripts/install-hooks.js",
+    "hooks:status": "node scripts/install-hooks.js --status",
+    "hooks:test": "node -e \"const Config = require('./hooks/core/Config'); const config = new Config(); config.getServerUrl().then(url => console.log('Hook server URL:', url)).catch(e => console.error('Hook test failed:', e.message))\"",
+    "feature:status": "echo 'Current feature:' && [ -f '.claude/feature.md' ] && head -1 .claude/feature.md || echo 'No active feature'",
+    "feature:new": "echo 'Ready for new feature - create .claude/feature.md'",
+    "prd:create": "echo 'Use /create-prd slash command in Claude Code'",
+    "prd:status": "[ -f '.claude/prd.md' ] && echo 'PRD exists:' && head -1 .claude/prd.md || echo 'No PRD found - run npm run prd:create'",
+    "clean": "echo 'Configure your clean command here'"
+  },
+  "keywords": [
+    "agentic",
+    "development",
+    "claude-code",
+    "methodology"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "axios": "^1.10.0",
+    "dotenv": "^16.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10"
+  }
+}
