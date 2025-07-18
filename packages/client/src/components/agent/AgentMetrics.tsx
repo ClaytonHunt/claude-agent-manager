@@ -42,7 +42,7 @@ interface AgentMetrics {
 }
 
 // Mock hook for metrics - would be replaced with actual implementation
-const useAgentMetrics = (agentId: string) => {
+const useAgentMetrics = (agentId: string, agent: Agent) => {
   // Generate mock metrics based on agent data
   const metrics: AgentMetrics = useMemo(() => ({
     performance: {
@@ -77,7 +77,7 @@ export function AgentMetrics({
   showHistory = false,
   className,
 }: AgentMetricsProps) {
-  const { metrics, loading, error, refreshMetrics } = useAgentMetrics(agent.id);
+  const { metrics, loading, error, refreshMetrics } = useAgentMetrics(agent.id, agent);
   const [selectedTimeRange, setSelectedTimeRange] = useState('1h');
 
   const formatUptime = (uptime: number) => {
