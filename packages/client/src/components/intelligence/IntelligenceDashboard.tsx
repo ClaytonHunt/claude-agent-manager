@@ -5,6 +5,7 @@ import {
   Pattern, 
   Insight 
 } from '@claude-agent-manager/shared';
+import { AnalyticsService } from '../../services/AnalyticsService';
 
 interface IntelligenceDashboardProps {
   agents: Agent[];
@@ -20,37 +21,8 @@ interface AnalyticsUpdate {
   data: any;
 }
 
-// Mock analytics service
-const mockAnalyticsService = {
-  getMetrics: async () => ({
-    performance: {
-      averageResponseTime: 250,
-      throughput: 85,
-      errorRate: 0.03,
-      resourceUtilization: 0.65
-    },
-    usage: {
-      totalAgents: 100,
-      activeAgents: 75,
-      completedTasks: 1500,
-      averageRuntime: 3600
-    },
-    patterns: {
-      peakHours: [9, 10, 11, 14, 15, 16],
-      commonWorkflows: ['tdd-cycle', 'bug-fix', 'feature-dev'],
-      efficiencyTrends: []
-    }
-  }),
-  getPatterns: async () => [],
-  getInsights: async () => [],
-  subscribeToAnalytics: (callback: (update: AnalyticsUpdate) => void) => {
-    // Mock subscription
-    return () => {};
-  },
-  unsubscribeFromAnalytics: () => {
-    // Mock unsubscribe
-  }
-};
+// Get analytics service instance
+const analyticsService = AnalyticsService.getInstance();
 
 export function IntelligenceDashboard({ 
   agents, 
@@ -70,6 +42,16 @@ export function IntelligenceDashboard({
   const patterns = propPatterns || localPatterns;
   const insights = propInsights || localInsights;
 
+  // Data validation for malformed metrics
+  const hasValidMetrics = metrics && 
+    typeof metrics === 'object' && 
+    metrics.performance && 
+    typeof metrics.performance === 'object' &&
+    metrics.usage && 
+    typeof metrics.usage === 'object';
+
+  const isDataMalformed = metrics && !hasValidMetrics;
+
   // Handle real-time updates
   const handleAnalyticsUpdate = useCallback((update: AnalyticsUpdate) => {
     switch (update.type) {
@@ -87,10 +69,10 @@ export function IntelligenceDashboard({
 
   // Subscribe to real-time analytics updates
   useEffect(() => {
-    const unsubscribe = mockAnalyticsService.subscribeToAnalytics(handleAnalyticsUpdate);
+    const unsubscribe = analyticsService.subscribeToAnalytics(handleAnalyticsUpdate);
     return () => {
       unsubscribe();
-      mockAnalyticsService.unsubscribeFromAnalytics();
+      analyticsService.unsubscribeFromAnalytics();
     };
   }, [handleAnalyticsUpdate]);
 
@@ -98,9 +80,9 @@ export function IntelligenceDashboard({
   const handleRetry = useCallback(async () => {
     try {
       const [metricsData, patternsData, insightsData] = await Promise.all([
-        mockAnalyticsService.getMetrics(),
-        mockAnalyticsService.getPatterns(),
-        mockAnalyticsService.getInsights()
+        analyticsService.getMetrics(),
+        analyticsService.getPatterns(),
+        analyticsService.getInsights()
       ]);
       
       setLocalMetrics(metricsData);
@@ -131,11 +113,11 @@ export function IntelligenceDashboard({
     );
   }
 
-  if (error) {
+  if (error || isDataMalformed) {
     return (
       <div className="p-6 text-center">
         <div className="text-red-600 mb-4">
-          {error.includes('validation') ? 'Data validation error' : error}
+          {error?.includes('validation') || error?.includes('malformed') || isDataMalformed ? 'Data validation error' : error}
         </div>
         <button 
           onClick={handleRetry}
@@ -159,28 +141,28 @@ export function IntelligenceDashboard({
       <div data-testid="metrics-panel" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-sm font-medium text-gray-500 mb-2">Response Time</h3>
-          <div className="text-2xl font-bold text-gray-900">
+          <div className="text-2xl font-bold text-gray-900" data-testid="response-time-value">
             {metrics?.performance?.averageResponseTime ? `${metrics.performance.averageResponseTime}ms` : '--'}
           </div>
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-sm font-medium text-gray-500 mb-2">Throughput</h3>
-          <div className="text-2xl font-bold text-gray-900">
+          <div className="text-2xl font-bold text-gray-900" data-testid="throughput-value">
             {metrics?.performance?.throughput || '--'}
           </div>
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-sm font-medium text-gray-500 mb-2">Error Rate</h3>
-          <div className="text-2xl font-bold text-gray-900">
+          <div className="text-2xl font-bold text-gray-900" data-testid="error-rate-value">
             {metrics?.performance?.errorRate ? `${Math.round(metrics.performance.errorRate * 100)}%` : '--'}
           </div>
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-sm font-medium text-gray-500 mb-2">Resource Usage</h3>
-          <div className="text-2xl font-bold text-gray-900">
+          <div className="text-2xl font-bold text-gray-900" data-testid="resource-usage-value">
             {metrics?.performance?.resourceUtilization ? `${Math.round(metrics.performance.resourceUtilization * 100)}%` : '--'}
           </div>
         </div>

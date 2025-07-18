@@ -232,6 +232,8 @@ export function VirtualizedLogViewer({
                   'p-2 rounded-md transition-colors',
                   showFilters ? 'bg-primary-100 text-primary-700' : 'hover:bg-gray-100'
                 )}
+                aria-label="Toggle filters"
+                title="Toggle filters"
               >
                 <Filter className="w-4 h-4" />
               </button>
@@ -373,6 +375,7 @@ export function VirtualizedLogViewer({
               aria-label="Log entries"
             >
               <List
+                data-testid="virtual-scroll-container"
                 height={height}
                 itemCount={filteredLogs.length}
                 itemSize={ITEM_HEIGHT}
