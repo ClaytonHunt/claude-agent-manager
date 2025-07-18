@@ -4,16 +4,6 @@ import '@testing-library/jest-dom';
 import { AgentMetrics } from '@/components/agent/AgentMetrics';
 import { Agent } from '@claude-agent-manager/shared';
 
-// Mock chart library (not used in component, remove this mock)
-// jest.mock('recharts', () => ({
-//   LineChart: ({ children }: any) => <div data-testid="line-chart">{children}</div>,
-//   Line: () => <div data-testid="chart-line" />,
-//   XAxis: () => <div data-testid="x-axis" />,
-//   YAxis: () => <div data-testid="y-axis" />,
-//   CartesianGrid: () => <div data-testid="chart-grid" />,
-//   Tooltip: () => <div data-testid="chart-tooltip" />,
-//   ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
-// }));
 
 const mockAgent: Agent = {
   id: 'test-agent-123',
