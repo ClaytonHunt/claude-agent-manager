@@ -2,7 +2,7 @@
 
 ## Project Context Engineering Setup
 
-Initialize Context Engineering structure in the current project. Detect project type and create customized templates and documentation structure.
+Initialize Context Engineering structure in the current project. Detect project type and purpose by analyzing project files and asking questions to create customized templates and documentation structure.
 
 ## Setup Process
 
@@ -31,21 +31,18 @@ Initialize Context Engineering structure in the current project. Detect project 
 ### Always Create in .claude/
 ```
 .claude/
-├── feature.md               # Feature specification template
-├── work-analysis.md         # PRP template
-├── task.md                  # Current task template
 └── context-links.md         # Dynamic context links
 ```
 
 ### Documentation Structure (in detected location)
 ```
-docs/context-engineering/    # or docs/ if no existing structure
-├── planning.md              # Main project overview
-├── architecture.md          # System architecture
-├── coding-standards.md      # Language-specific conventions
-├── testing-strategy.md      # Testing approaches
-├── deployment-process.md    # CI/CD and deployment
-└── domain-knowledge.md      # Business logic and domain
+docs/context-engineering/          # or docs/ if no existing structure
+├── product-requirements-doc.md    # Main project overview
+├── architecture.md                # System architecture
+├── coding-standards.md            # Language-specific conventions
+├── testing-strategy.md            # Testing approaches
+├── deployment-process.md          # CI/CD and deployment
+└── domain-knowledge.md            # Business logic and domain
 ```
 
 ## Project Type Detection & Customization
@@ -139,8 +136,8 @@ Create templates adapted to detected project:
    - Create documentation structure in detected location
    - Copy base templates with project customizations
 
-2. **Generate Planning Document**
-   - Create initial `planning.md` with detected project information
+2. **Generate Product Requirements Document**
+   - Create initial `product-requirements-doc.md` with detected project information
    - Include technology stack and build tools
    - Add links to other Context Engineering documents
 

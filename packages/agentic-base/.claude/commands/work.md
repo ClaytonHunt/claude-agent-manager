@@ -1,4 +1,4 @@
-Following all established project standards and workflow in ~/.claude/CLAUDE.md and connected documentation.
+Following all established project standards and workflow in CLAUDE.md and connected documentation.
 
 Use async specialist subagents for parallel analysis and execution:
 
