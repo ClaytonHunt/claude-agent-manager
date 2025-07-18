@@ -1,4 +1,4 @@
-import React, { useState, ReactNode } from 'react';
+import React, { useState, ReactNode, useMemo } from 'react';
 import { cn } from '@/utils';
 
 export interface TabItem {
@@ -35,7 +35,9 @@ export function AgentDetailTabs({
     onTabChange?.(tabId);
   };
 
-  const activeTabContent = tabs.find(tab => tab.id === activeTab)?.content;
+  const activeTabContent = useMemo(() => {
+    return tabs.find(tab => tab.id === activeTab)?.content;
+  }, [tabs, activeTab]);
 
   return (
     <div className={cn('w-full', className)}>
@@ -98,7 +100,11 @@ export function AgentDetailTabs({
 
       {/* Tab Content */}
       <div className="mt-6">
-        {activeTabContent || (
+        {activeTabContent ? (
+          <div key={activeTab} className="transition-opacity duration-200">
+            {activeTabContent}
+          </div>
+        ) : (
           <div className="text-center py-12 text-gray-500">
             <p>No content available for this tab.</p>
           </div>

@@ -7,11 +7,13 @@ import { Agent } from '@claude-agent-manager/shared';
 // Mock analytics service
 jest.mock('../../services/AnalyticsService', () => ({
   AnalyticsService: {
-    getMetrics: jest.fn(),
-    getPatterns: jest.fn(),
-    getInsights: jest.fn(),
-    subscribeToAnalytics: jest.fn(),
-    unsubscribeFromAnalytics: jest.fn()
+    getInstance: jest.fn().mockReturnValue({
+      getMetrics: jest.fn(),
+      getPatterns: jest.fn(),
+      getInsights: jest.fn(),
+      subscribeToAnalytics: jest.fn(),
+      unsubscribeFromAnalytics: jest.fn()
+    })
   }
 }));
 
@@ -92,8 +94,45 @@ const createMockAnalyticsData = {
 };
 
 describe('IntelligenceDashboard', () => {
+  let mockAnalyticsService: any;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    
+    // Get the mock service instance
+    const { AnalyticsService } = require('../../services/AnalyticsService');
+    mockAnalyticsService = AnalyticsService.getInstance();
+    
+    // Set up mock implementations
+    mockAnalyticsService.getMetrics.mockResolvedValue({
+      performance: {
+        averageResponseTime: 250,
+        throughput: 85,
+        errorRate: 0.03,
+        resourceUtilization: 0.65
+      },
+      usage: {
+        totalAgents: 100,
+        activeAgents: 75,
+        completedTasks: 1500,
+        averageRuntime: 3600
+      },
+      patterns: {
+        peakHours: [9, 10, 11, 14, 15, 16],
+        commonWorkflows: ['tdd-cycle', 'bug-fix', 'feature-dev'],
+        efficiencyTrends: []
+      },
+      tools: {
+        mostUsedTools: [],
+        toolUsageDistribution: {},
+        totalToolUsage: 0,
+        recentToolActivity: []
+      }
+    });
+    
+    mockAnalyticsService.getPatterns.mockResolvedValue([]);
+    mockAnalyticsService.getInsights.mockResolvedValue([]);
+    mockAnalyticsService.subscribeToAnalytics.mockReturnValue(() => {});
   });
 
   describe('Component Rendering', () => {
@@ -172,7 +211,10 @@ describe('IntelligenceDashboard', () => {
       
       render(<IntelligenceDashboard agents={mockAgents} metrics={undefined} />);
       
-      expect(screen.getByText('--')).toBeInTheDocument(); // Fallback for missing data
+      expect(screen.getByTestId('response-time-value')).toHaveTextContent('--');
+      expect(screen.getByTestId('throughput-value')).toHaveTextContent('--');
+      expect(screen.getByTestId('error-rate-value')).toHaveTextContent('--');
+      expect(screen.getByTestId('resource-usage-value')).toHaveTextContent('--');
     });
   });
 
@@ -286,7 +328,7 @@ describe('IntelligenceDashboard', () => {
       render(<IntelligenceDashboard agents={mockAgents} />);
       
       // Should subscribe to analytics updates
-      expect(jest.mocked(require('../../services/AnalyticsService').AnalyticsService.subscribeToAnalytics)).toHaveBeenCalled();
+      expect(mockAnalyticsService.subscribeToAnalytics).toHaveBeenCalled();
     });
 
     it('should unsubscribe on component unmount', () => {
@@ -296,7 +338,7 @@ describe('IntelligenceDashboard', () => {
       
       unmount();
       
-      expect(jest.mocked(require('../../services/AnalyticsService').AnalyticsService.unsubscribeFromAnalytics)).toHaveBeenCalled();
+      expect(mockAnalyticsService.unsubscribeFromAnalytics).toHaveBeenCalled();
     });
 
     it('should handle real-time metric updates', async () => {
@@ -305,7 +347,7 @@ describe('IntelligenceDashboard', () => {
       render(<IntelligenceDashboard agents={mockAgents} />);
       
       // Simulate real-time update
-      const updateCallback = jest.mocked(require('../../services/AnalyticsService').AnalyticsService.subscribeToAnalytics).mock.calls[0][0];
+      const updateCallback = mockAnalyticsService.subscribeToAnalytics.mock.calls[0][0];
       
       updateCallback({
         type: 'metrics_update',
@@ -399,7 +441,7 @@ describe('IntelligenceDashboard', () => {
       fireEvent.click(retryButton);
       
       await waitFor(() => {
-        expect(jest.mocked(require('../../services/AnalyticsService').AnalyticsService.getMetrics)).toHaveBeenCalled();
+        expect(mockAnalyticsService.getMetrics).toHaveBeenCalled();
       });
     });
 

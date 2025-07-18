@@ -100,3 +100,22 @@ jspm_packages/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Test artifacts and reports
+test-results/
+playwright-report/
+**/coverage/
+*.log
+.last-run.json
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+debug-*.js
+test-*.js
+simple-*.js
+validate-*.js
+
+# Git maintenance
+.git/gc.log

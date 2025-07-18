@@ -36,6 +36,12 @@ export class AnalyticsService {
         peakHours: [9, 10, 11, 14, 15, 16],
         commonWorkflows: ['tdd-cycle', 'bug-fix', 'feature-dev'],
         efficiencyTrends: []
+      },
+      tools: {
+        mostUsedTools: [],
+        toolUsageDistribution: {},
+        totalToolUsage: 0,
+        recentToolActivity: []
       }
     };
   }

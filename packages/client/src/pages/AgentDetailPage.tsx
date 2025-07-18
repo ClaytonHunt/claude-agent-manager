@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Agent } from '@claude-agent-manager/shared';
 import { useAgentStore } from '@/stores';
 import { LoadingSpinner, Button, Card, CardContent } from '@/components/common';
-import { AgentDetailHeader, AgentDetailTabs, LogViewer, AgentContextPanel } from '@/components/agent';
+import { AgentDetailHeader, AgentDetailTabs, LogViewer, AgentContextPanel, AgentDetailErrorBoundary } from '@/components/agent';
 import { VirtualizedLogViewer } from '@/components/agent/VirtualizedLogViewer';
 import { AgentMetrics } from '@/components/agent/AgentMetrics';
 import { AlertTriangle, AlertCircle, Info, FileText, Settings, Activity, Play, Square, RotateCcw, ArrowRightLeft, Users, BarChart3 } from 'lucide-react';
@@ -36,44 +36,24 @@ const sanitizeContextData = (context: Record<string, any>): Record<string, any> 
 export function AgentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { fetchAgent } = useAgentStore();
+  const { fetchAgent, selectedAgent, loading, error, updateAgent } = useAgentStore();
   const { user, hasPermission } = useAuth();
-  const [agent, setAgent] = useState<Agent | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const agent = selectedAgent;
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadAgent = async () => {
-      if (!id) {
-        navigate('/agents');
-        return;
-      }
+    if (!id) {
+      navigate('/agents');
+      return;
+    }
 
-      // Enhanced UUID validation for security
-      if (!VALID_UUID_PATTERN.test(id)) {
-        setError('Invalid agent ID format');
-        setLoading(false);
-        return;
-      }
+    // Enhanced UUID validation for security
+    if (!VALID_UUID_PATTERN.test(id)) {
+      return;
+    }
 
-      try {
-        setLoading(true);
-        setError(null);
-        const agentData = await fetchAgent(id);
-        if (!agentData) {
-          setError('Agent not found');
-        } else {
-          setAgent(agentData);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load agent');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadAgent();
+    // Fetch agent data using the store method
+    fetchAgent(id);
   }, [id, fetchAgent, navigate]);
 
   // Agent action handlers
@@ -85,8 +65,11 @@ export function AgentDetailPage() {
       // Mock API call - would be replaced with actual implementation
       await new Promise(resolve => setTimeout(resolve, 1000));
       console.log(`Executed ${action} on agent ${agent.id}`);
-      // Update agent status locally
-      setAgent(prev => prev ? { ...prev, status: action === 'start' ? 'active' : action === 'stop' ? 'idle' : prev.status } : null);
+      // Update agent status using store
+      if (agent) {
+        const newStatus = action === 'start' ? 'active' : action === 'stop' ? 'idle' : agent.status;
+        updateAgent({ ...agent, status: newStatus });
+      }
     } catch (err) {
       console.error(`Failed to ${action} agent:`, err);
     } finally {
@@ -94,87 +77,31 @@ export function AgentDetailPage() {
     }
   };
 
-  // Memoized sanitized context
+  // Memoized sanitized context - moved before conditional returns
   const sanitizedContext = useMemo(() => {
     return agent?.context ? sanitizeContextData(agent.context) : {};
   }, [agent?.context]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6 flex items-center justify-center min-h-[50vh]">
-        <Card className="max-w-md w-full">
-          <CardContent className="p-8 text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertTriangle className="w-8 h-8 text-red-600" />
-            </div>
-            
-            <h1 className="text-xl font-semibold text-gray-900 mb-2">
-              Failed to Load Agent
-            </h1>
-            
-            <p className="text-gray-600 mb-6">
-              {error}
-            </p>
-
-            <Button onClick={() => navigate('/agents')} className="w-full">
-              Back to Agents
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (!agent) {
-    return (
-      <div className="p-6 flex items-center justify-center min-h-[50vh]">
-        <Card className="max-w-md w-full">
-          <CardContent className="p-8 text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="w-8 h-8 text-gray-600" />
-            </div>
-            
-            <h1 className="text-xl font-semibold text-gray-900 mb-2">
-              Agent Not Found
-            </h1>
-            
-            <p className="text-gray-600 mb-6">
-              The requested agent could not be found. It may have been deleted or the ID is incorrect.
-            </p>
-
-            <Button onClick={() => navigate('/agents')} className="w-full">
-              Back to Agents
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  const tabs = [
-    {
-      id: 'overview',
-      label: 'Overview',
-      icon: <Info className="w-4 h-4" />,
-      content: (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" role="main" aria-label="Agent overview">
-          <div className="lg:col-span-2">
-            <h2 className="text-xl font-semibold mb-4">Agent Details</h2>
-            <Card>
-              <CardContent className="p-6">
-                <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">ID</dt>
-                    <dd className="mt-1 text-sm text-gray-900 font-mono">{agent.id}</dd>
-                  </div>
+  // Memoized tabs - moved before conditional returns to maintain hook order
+  const tabs = useMemo(() => {
+    if (!agent) return [];
+    
+    return [
+      {
+        id: 'overview',
+        label: 'Overview',
+        icon: <Info className="w-4 h-4" />,
+        content: (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" role="main" aria-label="Agent overview">
+            <div className="lg:col-span-2">
+              <h2 className="text-xl font-semibold mb-4">Agent Details</h2>
+              <Card>
+                <CardContent className="p-6">
+                  <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">ID</dt>
+                      <dd className="mt-1 text-sm text-gray-900 font-mono">{agent.id}</dd>
+                    </div>
                   <div>
                     <dt className="text-sm font-medium text-gray-500">Status</dt>
                     <dd className="mt-1 text-sm">
@@ -303,7 +230,7 @@ export function AgentDetailPage() {
             </Card>
 
             {agent.tags && agent.tags.length > 0 && (
-              <div className="mt-6">
+              <div className="mt-6" data-testid="agent-tags">
                 <h3 className="text-lg font-medium mb-3">Tags</h3>
                 <Card>
                   <CardContent className="p-4">
@@ -332,11 +259,17 @@ export function AgentDetailPage() {
       icon: <BarChart3 className="w-4 h-4" />,
       content: (
         <div>
-          <AgentMetrics 
-            agent={agent} 
-            realTimeUpdates={true}
-            showHistory={true}
-          />
+          {agent ? (
+            <AgentMetrics 
+              agent={agent} 
+              realTimeUpdates={true}
+              showHistory={true}
+            />
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              <p>Loading metrics...</p>
+            </div>
+          )}
         </div>
       ),
     },
@@ -347,13 +280,19 @@ export function AgentDetailPage() {
       badge: agent.logs?.length || 0,
       content: (
         <div role="tabpanel" aria-label="Agent logs">
-          <VirtualizedLogViewer
-            logs={agent.logs || []}
-            height={600}
-            autoScroll={true}
-            realTimeUpdates={true}
-            maintainScrollPosition={false}
-          />
+          {agent ? (
+            <VirtualizedLogViewer
+              logs={agent.logs || []}
+              height={600}
+              autoScroll={true}
+              realTimeUpdates={true}
+              maintainScrollPosition={false}
+            />
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              <p>Loading logs...</p>
+            </div>
+          )}
         </div>
       ),
     },
@@ -389,25 +328,108 @@ export function AgentDetailPage() {
       ),
     },
   ];
+  }, [agent, sanitizedContext]);
+
+  // Conditional returns after all hooks
+  if (id && !VALID_UUID_PATTERN.test(id)) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-[50vh]">
+        <Card className="max-w-md w-full">
+          <CardContent className="p-8 text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="w-8 h-8 text-red-600" />
+            </div>
+            <h1 className="text-xl font-semibold text-gray-900 mb-2">Invalid agent ID format</h1>
+            <p className="text-gray-600 mb-6">The provided agent ID is not in a valid format.</p>
+            <Button onClick={() => navigate('/agents')} variant="secondary">
+              Back to Agents
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <LoadingSpinner data-testid="loading-spinner" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-[50vh]">
+        <Card className="max-w-md w-full">
+          <CardContent className="p-8 text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="w-8 h-8 text-red-600" />
+            </div>
+            
+            <h1 className="text-xl font-semibold text-gray-900 mb-2">
+              Failed to Load Agent
+            </h1>
+            
+            <p className="text-gray-600 mb-6">
+              {error}
+            </p>
+
+            <Button onClick={() => navigate('/agents')} className="w-full">
+              Back to Agents
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!agent) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-[50vh]">
+        <Card className="max-w-md w-full">
+          <CardContent className="p-8 text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-8 h-8 text-gray-600" />
+            </div>
+            
+            <h1 className="text-xl font-semibold text-gray-900 mb-2">
+              Agent Not Found
+            </h1>
+            
+            <p className="text-gray-600 mb-6">
+              The requested agent could not be found. It may have been deleted or the ID is incorrect.
+            </p>
+
+            <Button onClick={() => navigate('/agents')} className="w-full">
+              Back to Agents
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6">
-      <AgentDetailHeader agent={agent} />
-      <div role="tablist" aria-label="Agent detail sections">
-        <AgentDetailTabs tabs={tabs} defaultActiveTab="overview" />
+    <AgentDetailErrorBoundary>
+      <div className="p-6">
+        <AgentDetailHeader agent={agent} />
+        <div role="tablist" aria-label="Agent detail sections">
+          <AgentDetailTabs tabs={tabs} defaultActiveTab="overview" />
+        </div>
+        
+        {/* WebSocket status and real-time indicators */}
+        <div data-testid="websocket-status-indicator" className="sr-only">
+          WebSocket connection active
+        </div>
+        <div data-testid="real-time-updates-toggle" className="sr-only">
+          Real-time updates enabled
+        </div>
+        <div data-testid="real-time-metrics-update" className="sr-only">
+          Real-time metrics update active
+        </div>
       </div>
-      
-      {/* WebSocket status and real-time indicators */}
-      <div data-testid="websocket-status-indicator" className="sr-only">
-        WebSocket connection active
-      </div>
-      <div data-testid="real-time-updates-toggle" className="sr-only">
-        Real-time updates enabled
-      </div>
-      <div data-testid="real-time-metrics-update" className="sr-only">
-        Real-time metrics update active
-      </div>
-    </div>
+    </AgentDetailErrorBoundary>
   );
 }
 

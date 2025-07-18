@@ -4,10 +4,10 @@ This file configures Claude Code with the agentic development methodology - a sy
 
 ## PROJECT OVERVIEW
 
-**Project Name**: Agentic-Base Starter Kit  
+**Project Name**: [Agentic-Base Starter Kit]
 **Technology Stack**: [Customize for your stack]  
-**Architecture Pattern**: Agentic methodology with specialist subagents  
-**Primary Purpose**: Language-agnostic starter kit for agentic development
+**Architecture Pattern**: [Agentic methodology with orchestrated agents]
+**Primary Purpose**: [Language-agnostic starter kit for agentic development]
 
 ## COMMUNICATION STYLE & TECHNICAL STANDARDS 💬
 
@@ -36,7 +36,7 @@ This file configures Claude Code with the agentic development methodology - a sy
 
 **MANDATORY**: Use async subagent specialists for parallel analysis and accelerated development workflows.
 
-### Core Specialist Subagent Roles
+### Core Specialist Agent Roles
 - **🏗️ Architecture Specialist**: System design, patterns, legacy migration, scalability
 - **🧪 Quality Assurance Specialist**: Testing strategies, test automation, quality gates
 - **👨‍💻 Code Review Specialist**: Code quality, security, performance optimization
@@ -46,7 +46,7 @@ This file configures Claude Code with the agentic development methodology - a sy
 - **🔒 Security Specialist**: Vulnerability analysis, secure coding practices, threat modeling
 - **📊 Performance Specialist**: Optimization, profiling, monitoring, scalability analysis
 
-### Async Subagent Execution Protocol
+### Async Execution Protocol
 **MANDATORY**: Launch specialists concurrently for maximum efficiency.
 
 1. **Parallel Specialist Analysis** - Launch multiple Task agents simultaneously:

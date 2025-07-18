@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { FixedSizeList as List } from 'react-window';
 import { formatDate, cn } from '@/utils';
-import { LogEntry, LogLevel } from '@/types';
+import { LogEntry, LogLevel } from '@claude-agent-manager/shared';
 import { Card, CardHeader, CardContent, Badge } from '@/components/common';
 import { 
   ChevronDown, 
@@ -232,6 +232,8 @@ export function VirtualizedLogViewer({
                   'p-2 rounded-md transition-colors',
                   showFilters ? 'bg-primary-100 text-primary-700' : 'hover:bg-gray-100'
                 )}
+                aria-label="Toggle filters"
+                title="Toggle filters"
               >
                 <Filter className="w-4 h-4" />
               </button>
@@ -365,7 +367,6 @@ export function VirtualizedLogViewer({
             </div>
           ) : (
             <div 
-              data-testid="virtual-scroll-container"
               data-item-count={filteredLogs.length}
               data-item-size={ITEM_HEIGHT}
               data-maintain-scroll={maintainScrollPosition.toString()}
@@ -374,6 +375,7 @@ export function VirtualizedLogViewer({
               aria-label="Log entries"
             >
               <List
+                data-testid="virtual-scroll-container"
                 height={height}
                 itemCount={filteredLogs.length}
                 itemSize={ITEM_HEIGHT}

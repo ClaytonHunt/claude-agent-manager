@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '@/utils';
 
-interface CardProps {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   onClick?: () => void;
@@ -22,11 +22,12 @@ interface CardFooterProps {
   className?: string;
 }
 
-export function Card({ children, className, onClick }: CardProps) {
+export function Card({ children, className, onClick, ...props }: CardProps) {
   return (
     <div 
       className={cn('bg-white rounded-lg border border-gray-200 shadow-sm', className)}
       onClick={onClick}
+      {...props}
     >
       {children}
     </div>

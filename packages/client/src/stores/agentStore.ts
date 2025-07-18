@@ -118,14 +118,18 @@ export const useAgentStore = create<AgentStore>()(
     },
 
     fetchAgent: async (id: string) => {
-      const { setError } = get();
+      const { setError, setSelectedAgent } = get();
       
       try {
         const agent = await agentApi.getAgent(id);
+        if (agent) {
+          setSelectedAgent(agent);
+        }
         return agent;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to fetch agent';
         setError(errorMessage);
+        setSelectedAgent(null);
         return null;
       }
     },
