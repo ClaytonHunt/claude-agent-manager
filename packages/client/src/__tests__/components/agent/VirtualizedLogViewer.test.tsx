@@ -15,11 +15,17 @@ jest.mock('react-window', () => ({
     >
       {/* Simulate rendering only visible items */}
       {Array.from({ length: Math.min(10, itemCount) }, (_, index) => 
-        children({ index, style: { height: itemSize } })
+        <div key={index}>
+          {children({ index, style: { height: itemSize } })}
+        </div>
       )}
     </div>
   ),
 }));
+
+// Mock URL.createObjectURL for export functionality
+global.URL.createObjectURL = jest.fn(() => 'blob:url');
+global.URL.revokeObjectURL = jest.fn();
 
 const generateMockLogs = (count: number): LogEntry[] =>
   Array.from({ length: count }, (_, i) => ({

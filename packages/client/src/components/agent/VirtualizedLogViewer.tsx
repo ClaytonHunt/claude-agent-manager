@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { FixedSizeList as List } from 'react-window';
 import { formatDate, cn } from '@/utils';
-import { LogEntry, LogLevel } from '@/types';
+import { LogEntry, LogLevel } from '@claude-agent-manager/shared';
 import { Card, CardHeader, CardContent, Badge } from '@/components/common';
 import { 
   ChevronDown, 
@@ -365,7 +365,6 @@ export function VirtualizedLogViewer({
             </div>
           ) : (
             <div 
-              data-testid="virtual-scroll-container"
               data-item-count={filteredLogs.length}
               data-item-size={ITEM_HEIGHT}
               data-maintain-scroll={maintainScrollPosition.toString()}

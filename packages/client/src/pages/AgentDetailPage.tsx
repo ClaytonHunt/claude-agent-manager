@@ -102,7 +102,7 @@ export function AgentDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <LoadingSpinner />
+        <LoadingSpinner data-testid="loading-spinner" />
       </div>
     );
   }
@@ -303,7 +303,7 @@ export function AgentDetailPage() {
             </Card>
 
             {agent.tags && agent.tags.length > 0 && (
-              <div className="mt-6">
+              <div className="mt-6" data-testid="agent-tags">
                 <h3 className="text-lg font-medium mb-3">Tags</h3>
                 <Card>
                   <CardContent className="p-4">
