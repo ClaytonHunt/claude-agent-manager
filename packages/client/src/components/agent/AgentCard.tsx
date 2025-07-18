@@ -96,7 +96,7 @@ export function AgentCard({ agent, onClick, className }: AgentCardProps) {
             </div>
           </div>
           
-          <Badge variant={statusColor} size="sm">
+          <Badge variant={statusColor as "error" | "primary" | "success" | "warning" | "gray"} size="sm">
             {agent.status}
           </Badge>
         </div>
