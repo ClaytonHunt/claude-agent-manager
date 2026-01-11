@@ -7,8 +7,11 @@ import { config } from 'dotenv';
 import { AgentService } from './services/AgentService';
 import { WebSocketService } from './services/WebSocketService';
 import { RedisService } from './services/RedisService';
+import { ActivityTimelineService } from './services/ActivityTimelineService';
+import { AnalyticsService } from './services/AnalyticsService';
 import { agentRoutes } from './routes/agents';
 import { hookRoutes } from './routes/hooks';
+import { analyticsRoutes } from './routes/analytics';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
 
@@ -28,7 +31,10 @@ async function startServer() {
     
     const wsService = new WebSocketService();
     agentService.setWebSocketService(wsService); // Inject WebSocket service
-    
+
+    const activityService = new ActivityTimelineService(agentService);
+    const analyticsService = new AnalyticsService();
+
     // Create Express app
     const app = express();
     
@@ -44,8 +50,9 @@ async function startServer() {
     app.use(express.urlencoded({ extended: true }));
     
     // Routes
-    app.use('/api/agents', agentRoutes(agentService, wsService));
+    app.use('/api/agents', agentRoutes(agentService, wsService, activityService));
     app.use('/api/hooks', hookRoutes(agentService, wsService));
+    app.use('/api/analytics', analyticsRoutes(analyticsService, agentService));
     
     // Health check
     app.get('/health', (req, res) => {

@@ -1,11 +1,12 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Agent } from '@claude-agent-manager/shared';
+import { Agent, ActivityEvent } from '@claude-agent-manager/shared';
 import { useAgentStore } from '@/stores';
 import { LoadingSpinner, Button, Card, CardContent } from '@/components/common';
-import { AgentDetailHeader, AgentDetailTabs, LogViewer, AgentContextPanel, AgentDetailErrorBoundary } from '@/components/agent';
+import { AgentDetailHeader, AgentDetailTabs, LogViewer, AgentContextPanel, AgentDetailErrorBoundary, ActivityTimeline, HandoffModal } from '@/components/agent';
 import { VirtualizedLogViewer } from '@/components/agent/VirtualizedLogViewer';
 import { AgentMetrics } from '@/components/agent/AgentMetrics';
+import { agentApi } from '@/utils/api';
 import { AlertTriangle, AlertCircle, Info, FileText, Settings, Activity, Play, Square, RotateCcw, ArrowRightLeft, Users, BarChart3 } from 'lucide-react';
 
 // Enhanced UUID validation for better security
@@ -36,10 +37,14 @@ const sanitizeContextData = (context: Record<string, any>): Record<string, any> 
 export function AgentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { fetchAgent, selectedAgent, loading, error, updateAgent } = useAgentStore();
+  const { fetchAgent, selectedAgent, loading, error, updateAgent, agents } = useAgentStore();
   const { user, hasPermission } = useAuth();
   const agent = selectedAgent;
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [showHandoffModal, setShowHandoffModal] = useState(false);
+  const [handoffLoading, setHandoffLoading] = useState(false);
+  const [activities, setActivities] = useState<ActivityEvent[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
 
   useEffect(() => {
     if (!id) {
@@ -56,24 +61,73 @@ export function AgentDetailPage() {
     fetchAgent(id);
   }, [id, fetchAgent, navigate]);
 
+  // Load activities when agent changes
+  const loadActivities = useCallback(async () => {
+    if (!agent?.id) return;
+    setActivitiesLoading(true);
+    try {
+      const data = await agentApi.getAgentActivity(agent.id, { limit: 100 });
+      setActivities(data);
+    } catch (err) {
+      console.error('Failed to load activities:', err);
+    } finally {
+      setActivitiesLoading(false);
+    }
+  }, [agent?.id]);
+
+  useEffect(() => {
+    if (agent?.id) {
+      loadActivities();
+    }
+  }, [agent?.id, loadActivities]);
+
   // Agent action handlers
   const executeAgentAction = async (action: string) => {
     if (!agent || !hasPermission('modify_agents')) return;
-    
+
+    // Handle handoff separately with modal
+    if (action === 'handoff') {
+      setShowHandoffModal(true);
+      return;
+    }
+
     setActionLoading(action);
     try {
-      // Mock API call - would be replaced with actual implementation
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log(`Executed ${action} on agent ${agent.id}`);
-      // Update agent status using store
-      if (agent) {
-        const newStatus = action === 'start' ? 'active' : action === 'stop' ? 'idle' : agent.status;
-        updateAgent({ ...agent, status: newStatus });
+      let updatedAgent: Agent;
+      switch (action) {
+        case 'start':
+          updatedAgent = await agentApi.startAgent(agent.id);
+          break;
+        case 'stop':
+          updatedAgent = await agentApi.stopAgent(agent.id);
+          break;
+        case 'restart':
+          updatedAgent = await agentApi.restartAgent(agent.id);
+          break;
+        default:
+          throw new Error(`Unknown action: ${action}`);
       }
+      updateAgent(updatedAgent);
+      // Reload activities to show the new action
+      loadActivities();
     } catch (err) {
       console.error(`Failed to ${action} agent:`, err);
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  // Handoff handler
+  const handleHandoff = async (toAgentId: string, reason: string, context?: Record<string, any>) => {
+    if (!agent) return;
+    setHandoffLoading(true);
+    try {
+      await agentApi.initiateHandoff(agent.id, toAgentId, reason, context);
+      // Refresh agent data after handoff
+      fetchAgent(agent.id);
+      loadActivities();
+    } finally {
+      setHandoffLoading(false);
     }
   };
 
@@ -320,15 +374,20 @@ export function AgentDetailPage() {
       id: 'activity',
       label: 'Activity',
       icon: <Activity className="w-4 h-4" />,
+      badge: activities.length,
       content: (
-        <div className="text-center py-12 text-gray-500">
-          <Activity className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-          <p>Activity timeline will be implemented next</p>
-        </div>
+        <ActivityTimeline
+          agentId={agent.id}
+          activities={activities}
+          height={600}
+          realTimeUpdates={true}
+          isLoading={activitiesLoading}
+          onLoadMore={() => loadActivities()}
+        />
       ),
     },
   ];
-  }, [agent, sanitizedContext]);
+  }, [agent, sanitizedContext, activities, activitiesLoading, loadActivities]);
 
   // Conditional returns after all hooks
   if (id && !VALID_UUID_PATTERN.test(id)) {
@@ -417,7 +476,7 @@ export function AgentDetailPage() {
         <div role="tablist" aria-label="Agent detail sections">
           <AgentDetailTabs tabs={tabs} defaultActiveTab="overview" />
         </div>
-        
+
         {/* WebSocket status and real-time indicators */}
         <div data-testid="websocket-status-indicator" className="sr-only">
           WebSocket connection active
@@ -429,6 +488,16 @@ export function AgentDetailPage() {
           Real-time metrics update active
         </div>
       </div>
+
+      {/* Handoff Modal */}
+      <HandoffModal
+        isOpen={showHandoffModal}
+        onClose={() => setShowHandoffModal(false)}
+        onConfirm={handleHandoff}
+        currentAgent={agent}
+        availableAgents={agents}
+        isLoading={handoffLoading}
+      />
     </AgentDetailErrorBoundary>
   );
 }

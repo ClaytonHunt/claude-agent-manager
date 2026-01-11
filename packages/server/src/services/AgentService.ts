@@ -256,11 +256,102 @@ export class AgentService {
         totalAgents: agents.length,
         timestamp: new Date().toISOString()
       };
-      
+
       return { healthy: true, stats };
     } catch (error) {
       logger.error('Health check failed:', error);
       return { healthy: false, stats: null };
     }
+  }
+
+  /**
+   * Start an agent - transitions from idle to active
+   */
+  async startAgent(id: string): Promise<Agent> {
+    const agent = await this.getAgent(id);
+
+    if (agent.status === 'active') {
+      throw new ValidationError('Agent is already active');
+    }
+
+    if (agent.status === 'complete') {
+      throw new ValidationError('Cannot start a completed agent');
+    }
+
+    await this.addLogEntry(id, {
+      level: 'info',
+      message: 'Agent started',
+      metadata: { action: 'start', previousStatus: agent.status }
+    });
+
+    return this.updateAgentStatus(id, 'active');
+  }
+
+  /**
+   * Stop an agent - transitions from active/error to idle
+   */
+  async stopAgent(id: string, reason?: string): Promise<Agent> {
+    const agent = await this.getAgent(id);
+
+    if (agent.status === 'idle') {
+      throw new ValidationError('Agent is already idle');
+    }
+
+    if (agent.status === 'complete') {
+      throw new ValidationError('Cannot stop a completed agent');
+    }
+
+    await this.addLogEntry(id, {
+      level: 'info',
+      message: `Agent stopped${reason ? `: ${reason}` : ''}`,
+      metadata: { action: 'stop', reason, previousStatus: agent.status }
+    });
+
+    return this.updateAgentStatus(id, 'idle');
+  }
+
+  /**
+   * Restart an agent - stops then starts
+   */
+  async restartAgent(id: string): Promise<Agent> {
+    const agent = await this.getAgent(id);
+
+    if (agent.status === 'complete') {
+      throw new ValidationError('Cannot restart a completed agent');
+    }
+
+    // If not already idle, stop first
+    if (agent.status !== 'idle') {
+      await this.stopAgent(id, 'restart');
+      // Small delay to allow state transition
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    await this.addLogEntry(id, {
+      level: 'info',
+      message: 'Agent restarted',
+      metadata: { action: 'restart' }
+    });
+
+    return this.startAgent(id);
+  }
+
+  /**
+   * Mark an agent as complete
+   */
+  async completeAgent(id: string, summary?: string): Promise<Agent> {
+    const agent = await this.getAgent(id);
+
+    if (agent.status === 'complete') {
+      throw new ValidationError('Agent is already complete');
+    }
+
+    await this.addLogEntry(id, {
+      level: 'info',
+      message: summary ? `Agent completed: ${summary}` : 'Agent completed',
+      metadata: { action: 'complete', summary }
+    });
+
+    return this.updateAgentStatus(id, 'complete');
   }
 }

@@ -1,7 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { AgentService } from '../services/AgentService';
 import { WebSocketService } from '../services/WebSocketService';
-import { AgentRegistration, AgentQuery, ValidationError } from '@claude-agent-manager/shared';
+import { ActivityTimelineService } from '../services/ActivityTimelineService';
+import { AgentRegistration, AgentQuery, ValidationError, ActivityEventType } from '@claude-agent-manager/shared';
 import { z } from 'zod';
 
 const agentRegistrationSchema = z.object({
@@ -34,9 +35,26 @@ const handoffSchema = z.object({
   reason: z.string()
 });
 
+const handoffRequestSchema = z.object({
+  toAgentId: z.string(),
+  reason: z.string(),
+  context: z.record(z.any()).optional()
+});
+
+const stopAgentSchema = z.object({
+  reason: z.string().optional()
+});
+
+const activityQuerySchema = z.object({
+  limit: z.string().transform(val => parseInt(val, 10)).pipe(z.number().int().positive()).optional(),
+  offset: z.string().transform(val => parseInt(val, 10)).pipe(z.number().int().min(0)).optional(),
+  types: z.union([z.string(), z.array(z.string())]).optional()
+});
+
 export function agentRoutes(
   agentService: AgentService,
-  wsService: WebSocketService
+  wsService: WebSocketService,
+  activityService?: ActivityTimelineService
 ): Router {
   const router = Router();
 
@@ -218,14 +236,104 @@ export function agentRoutes(
   // Get agent hierarchy
   router.get('/hierarchy/:rootId?', async (req: Request, res: Response) => {
     const hierarchy = await agentService.getAgentHierarchy(req.params.rootId);
-    
+
     // Convert Map to object for JSON serialization
     const hierarchyObj: Record<string, any> = {};
     for (const [key, value] of hierarchy) {
       hierarchyObj[key] = value;
     }
-    
+
     res.json(hierarchyObj);
+  });
+
+  // Get agent activity timeline
+  router.get('/:id/activity', async (req: Request, res: Response) => {
+    if (!activityService) {
+      throw new ValidationError('Activity service not available');
+    }
+
+    try {
+      const query = activityQuerySchema.parse(req.query);
+      const types = query.types
+        ? (Array.isArray(query.types) ? query.types : [query.types]) as ActivityEventType[]
+        : undefined;
+
+      const activity = await activityService.getActivityTimeline(req.params.id, {
+        limit: query.limit,
+        offset: query.offset,
+        types
+      });
+
+      res.json(activity);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new ValidationError(error.errors.map(e => e.message).join(', '));
+      }
+      throw error;
+    }
+  });
+
+  // Get agent activity summary
+  router.get('/:id/activity/summary', async (req: Request, res: Response) => {
+    if (!activityService) {
+      throw new ValidationError('Activity service not available');
+    }
+
+    const summary = await activityService.getActivitySummary(req.params.id);
+    res.json(summary);
+  });
+
+  // Start agent
+  router.post('/:id/start', async (req: Request, res: Response) => {
+    const agent = await agentService.startAgent(req.params.id);
+    wsService.broadcastAgentUpdate(agent);
+    res.json(agent);
+  });
+
+  // Stop agent
+  router.post('/:id/stop', async (req: Request, res: Response) => {
+    try {
+      const { reason } = stopAgentSchema.parse(req.body);
+      const agent = await agentService.stopAgent(req.params.id, reason);
+      wsService.broadcastAgentUpdate(agent);
+      res.json(agent);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new ValidationError(error.errors.map(e => e.message).join(', '));
+      }
+      throw error;
+    }
+  });
+
+  // Restart agent
+  router.post('/:id/restart', async (req: Request, res: Response) => {
+    const agent = await agentService.restartAgent(req.params.id);
+    wsService.broadcastAgentUpdate(agent);
+    res.json(agent);
+  });
+
+  // Initiate handoff from specific agent
+  router.post('/:id/handoff', async (req: Request, res: Response) => {
+    try {
+      const { toAgentId, reason, context } = handoffRequestSchema.parse(req.body);
+
+      await agentService.handoffAgent({
+        fromAgentId: req.params.id,
+        toAgentId,
+        context: context || {},
+        reason,
+        timestamp: new Date()
+      });
+
+      wsService.broadcastHandoff(req.params.id, toAgentId, context || {});
+
+      res.json({ success: true });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new ValidationError(error.errors.map(e => e.message).join(', '));
+      }
+      throw error;
+    }
   });
 
   return router;

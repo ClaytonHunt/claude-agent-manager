@@ -6,3 +6,5 @@ export * from './AgentDetailTabs';
 export * from './AgentContextPanel';
 export * from './AgentMetrics';
 export * from './AgentDetailErrorBoundary';
+export * from './ActivityTimeline';
+export * from './HandoffModal';
