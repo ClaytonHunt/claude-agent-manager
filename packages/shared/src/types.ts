@@ -148,3 +148,90 @@ export class ConflictError extends AgentManagerError {
     super(message, 'CONFLICT', 409);
   }
 }
+
+/**
+ * Activity Timeline types
+ */
+export type ActivityEventType =
+  | 'agent_started'
+  | 'agent_stopped'
+  | 'tool_started'
+  | 'tool_completed'
+  | 'status_change'
+  | 'context_update'
+  | 'handoff'
+  | 'error'
+  | 'log';
+
+export interface ActivityEvent {
+  id: string;
+  type: ActivityEventType;
+  timestamp: Date;
+  agentId: string;
+  title: string;
+  description: string;
+  metadata?: Record<string, any>;
+  duration?: number; // For tool completions (ms)
+  status?: 'success' | 'error' | 'pending' | 'info';
+}
+
+export interface TimelineOptions {
+  limit?: number;
+  offset?: number;
+  types?: ActivityEventType[];
+  startDate?: Date;
+  endDate?: Date;
+}
+
+/**
+ * Tool Analytics types
+ */
+export interface ToolUsageStats {
+  toolName: string;
+  count: number;
+  avgDuration: number;
+  successRate: number;
+  lastUsed: Date;
+  category: string;
+}
+
+export interface ToolAnalytics {
+  summary: {
+    totalToolCalls: number;
+    uniqueToolsUsed: number;
+    averageExecutionTime: number;
+    successRate: number;
+  };
+  byCategory: Record<string, {
+    count: number;
+    avgDuration: number;
+    errorRate: number;
+  }>;
+  topTools: ToolUsageStats[];
+  timeline: Array<{
+    timestamp: Date;
+    toolName: string;
+    duration: number;
+    success: boolean;
+  }>;
+  patterns: Array<{
+    type: string;
+    description: string;
+    recommendation?: string;
+  }>;
+}
+
+/**
+ * Agent Action types
+ */
+export interface AgentActionResult {
+  success: boolean;
+  agent?: Agent;
+  error?: string;
+}
+
+export interface HandoffRequest {
+  toAgentId: string;
+  reason: string;
+  context?: Record<string, any>;
+}

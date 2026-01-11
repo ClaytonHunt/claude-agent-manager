@@ -1,4 +1,4 @@
-import { Agent, AgentQuery, AgentRegistration, LogEntry, HandoffContext } from '@/types';
+import { Agent, AgentQuery, AgentRegistration, LogEntry, HandoffContext, ActivityEvent, TimelineOptions, ToolAnalytics } from '@/types';
 import { API_BASE_URL } from './constants';
 
 // Base fetch wrapper with error handling
@@ -124,10 +124,63 @@ export const agentApi = {
 
   // Get agent hierarchy
   async getAgentHierarchy(rootId?: string): Promise<Record<string, any>> {
-    const endpoint = rootId 
+    const endpoint = rootId
       ? `/api/agents/hierarchy/${rootId}`
       : '/api/agents/hierarchy';
     return fetchApi<Record<string, any>>(endpoint);
+  },
+
+  // Get agent activity timeline
+  async getAgentActivity(id: string, options: TimelineOptions = {}): Promise<ActivityEvent[]> {
+    const params = new URLSearchParams();
+    if (options.limit) params.set('limit', String(options.limit));
+    if (options.offset) params.set('offset', String(options.offset));
+    if (options.types) {
+      options.types.forEach(type => params.append('types', type));
+    }
+    const queryString = params.toString();
+    return fetchApi<ActivityEvent[]>(`/api/agents/${id}/activity${queryString ? `?${queryString}` : ''}`);
+  },
+
+  // Get agent activity summary
+  async getAgentActivitySummary(id: string): Promise<{
+    totalEvents: number;
+    eventsByType: Record<string, number>;
+    errorCount: number;
+    lastActivity: Date | null;
+  }> {
+    return fetchApi(`/api/agents/${id}/activity/summary`);
+  },
+
+  // Start agent
+  async startAgent(id: string): Promise<Agent> {
+    return fetchApi<Agent>(`/api/agents/${id}/start`, { method: 'POST' });
+  },
+
+  // Stop agent
+  async stopAgent(id: string, reason?: string): Promise<Agent> {
+    return fetchApi<Agent>(`/api/agents/${id}/stop`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+  },
+
+  // Restart agent
+  async restartAgent(id: string): Promise<Agent> {
+    return fetchApi<Agent>(`/api/agents/${id}/restart`, { method: 'POST' });
+  },
+
+  // Initiate handoff from specific agent
+  async initiateHandoff(
+    fromAgentId: string,
+    toAgentId: string,
+    reason: string,
+    context?: Record<string, any>
+  ): Promise<void> {
+    return fetchApi<void>(`/api/agents/${fromAgentId}/handoff`, {
+      method: 'POST',
+      body: JSON.stringify({ toAgentId, reason, context }),
+    });
   },
 };
 
@@ -174,3 +227,40 @@ export async function searchAgents(query: string): Promise<Agent[]> {
 export async function getAgentHierarchy(rootId?: string): Promise<Record<string, any>> {
   return agentApi.getAgentHierarchy(rootId);
 }
+
+// Analytics API methods
+export const analyticsApi = {
+  // Get tool usage analytics
+  async getToolAnalytics(agentId?: string): Promise<ToolAnalytics> {
+    const params = agentId ? `?agentId=${encodeURIComponent(agentId)}` : '';
+    return fetchApi<ToolAnalytics>(`/api/analytics/tools${params}`);
+  },
+
+  // Get comprehensive metrics
+  async getMetrics(): Promise<any> {
+    return fetchApi<any>('/api/analytics/metrics');
+  },
+
+  // Get detected patterns
+  async getPatterns(): Promise<any[]> {
+    return fetchApi<any[]>('/api/analytics/patterns');
+  },
+
+  // Get insights
+  async getInsights(): Promise<any[]> {
+    return fetchApi<any[]>('/api/analytics/insights');
+  },
+
+  // Get dashboard summary
+  async getDashboardSummary(): Promise<any> {
+    return fetchApi<any>('/api/analytics/dashboard');
+  },
+
+  // Track tool usage
+  async trackToolUsage(toolName: string, duration?: number): Promise<void> {
+    return fetchApi<void>('/api/analytics/tools/track', {
+      method: 'POST',
+      body: JSON.stringify({ toolName, duration }),
+    });
+  },
+};

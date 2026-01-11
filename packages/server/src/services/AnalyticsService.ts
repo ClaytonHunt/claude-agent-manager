@@ -1,11 +1,13 @@
-import { 
-  AnalyticsEvent, 
-  AnalyticsMetrics, 
-  Pattern, 
-  Insight, 
+import {
+  AnalyticsEvent,
+  AnalyticsMetrics,
+  Pattern,
+  Insight,
   AnalyticsQuery,
   AnalyticsProcessingResult,
-  TrendData
+  TrendData,
+  ToolAnalytics,
+  ToolUsageStats,
 } from '@claude-agent-manager/shared';
 import { Agent } from '@claude-agent-manager/shared';
 
@@ -283,6 +285,109 @@ export class AnalyticsService {
    */
   getToolUsageStats(): Map<string, { count: number; lastUsed: Date; avgDuration: number }> {
     return new Map(this.toolUsageStats);
+  }
+
+  /**
+   * Get comprehensive tool analytics
+   */
+  getToolAnalytics(agentId?: string): ToolAnalytics {
+    const toolStats = Array.from(this.toolUsageStats.entries());
+    const totalCalls = toolStats.reduce((sum, [, stats]) => sum + stats.count, 0);
+    const uniqueTools = toolStats.length;
+
+    // Calculate overall average execution time
+    const totalWeightedDuration = toolStats.reduce(
+      (sum, [, stats]) => sum + stats.avgDuration * stats.count,
+      0
+    );
+    const averageExecutionTime = totalCalls > 0 ? totalWeightedDuration / totalCalls : 0;
+
+    // Categorize tools
+    const toolCategories: Record<string, string> = {
+      Read: 'file_operations',
+      Write: 'file_operations',
+      Edit: 'file_operations',
+      Glob: 'file_operations',
+      Grep: 'search_operations',
+      Bash: 'system_operations',
+      WebFetch: 'network_operations',
+      WebSearch: 'network_operations',
+      Task: 'agent_operations',
+    };
+
+    // Calculate by category
+    const byCategory: Record<string, { count: number; avgDuration: number; errorRate: number }> = {};
+    toolStats.forEach(([name, stats]) => {
+      const category = toolCategories[name] || 'other';
+      if (!byCategory[category]) {
+        byCategory[category] = { count: 0, avgDuration: 0, errorRate: 0 };
+      }
+      const existing = byCategory[category];
+      const newCount = existing.count + stats.count;
+      existing.avgDuration =
+        (existing.avgDuration * existing.count + stats.avgDuration * stats.count) / newCount;
+      existing.count = newCount;
+    });
+
+    // Get top tools
+    const topTools: ToolUsageStats[] = toolStats
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 10)
+      .map(([name, stats]) => ({
+        toolName: name,
+        count: stats.count,
+        avgDuration: stats.avgDuration,
+        successRate: 0.95, // Default success rate
+        lastUsed: stats.lastUsed,
+        category: toolCategories[name] || 'other',
+      }));
+
+    // Generate timeline (last 50 entries)
+    const timeline = toolStats
+      .map(([name, stats]) => ({
+        timestamp: stats.lastUsed,
+        toolName: name,
+        duration: stats.avgDuration,
+        success: true,
+      }))
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+      .slice(0, 50);
+
+    // Detect patterns
+    const patterns: Array<{ type: string; description: string; recommendation?: string }> = [];
+
+    // Check for heavy file operations
+    const fileOpsCount = byCategory['file_operations']?.count || 0;
+    if (fileOpsCount > totalCalls * 0.6) {
+      patterns.push({
+        type: 'heavy_file_operations',
+        description: 'Over 60% of tool usage is file operations',
+        recommendation: 'Consider batching file operations for better efficiency',
+      });
+    }
+
+    // Check for slow tools
+    const slowTools = toolStats.filter(([, stats]) => stats.avgDuration > 5000);
+    if (slowTools.length > 0) {
+      patterns.push({
+        type: 'slow_operations',
+        description: `${slowTools.length} tools have average execution time > 5s`,
+        recommendation: 'Investigate slow tool executions for optimization opportunities',
+      });
+    }
+
+    return {
+      summary: {
+        totalToolCalls: totalCalls,
+        uniqueToolsUsed: uniqueTools,
+        averageExecutionTime,
+        successRate: 0.95, // Default success rate
+      },
+      byCategory,
+      topTools,
+      timeline,
+      patterns,
+    };
   }
 
   /**
